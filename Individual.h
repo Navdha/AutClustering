@@ -7,31 +7,29 @@
 
 #ifndef INDIVIDUAL_H_
 #define INDIVIDUAL_H_
+#include <vector>
 
-#define MAX_ROW 20
-#define DIM 20
-/*class Item{
-public:
-	Item(int ftr){
-		this->feature = ftr;
-	}
-	int feature;
-	double items[feature];
-};*/
+using namespace std;
 class Individual {
 public:
-	Individual();
+	Individual(int kmax, int dim);
 	virtual ~Individual();
+
+	double rawFitness;
+	bool valid;
+	double** clusCenter;
+	double* threshold;
+	bool* active;
+	int active_ctr;
+	int k;
+	vector<int>** clusters;
+
 	bool isValid();
 	bool getValid();
 	void setValid(bool valid);
 	double getFitness();
 	void setFitness(double rawFitness);
-private:
-	double rawFitness;
-	bool valid;
-	double clusCenter[MAX_ROW][DIM];
-	double threshold[MAX_ROW];
+	bool operator<=(const Individual& right);
 };
 
 #endif /* INDIVIDUAL_H_ */
