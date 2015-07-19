@@ -10,18 +10,19 @@
 
 Individual::Individual(int kmax, int dim) {
 	// TODO Auto-generated constructor stub
+	cout << "Individual class constructor called." << endl;
 	rawFitness = 0.0;
 	valid = false;
 	k = kmax;
-	clusCenter = new double* [kmax];
-	clusters = new vector<int>*[kmax];
+	clusCenter = new double* [k];
+	clusters = new vector<int>*[k];
 	for (int count = 0; count < k; count++)
 	{
 	    clusCenter[count] = new double[dim];
 	    clusters[count] = new vector<int>;
 	}
-	threshold =  new double[kmax];
-	active = new bool[kmax];
+	threshold =  new double[k];
+	active = new bool[k];
 	active_ctr = 0;
 }
 

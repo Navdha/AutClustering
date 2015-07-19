@@ -8,6 +8,7 @@
 #ifndef INDIVIDUAL_H_
 #define INDIVIDUAL_H_
 #include <vector>
+#include <iostream>
 
 using namespace std;
 class Individual {

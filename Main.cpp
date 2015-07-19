@@ -6,6 +6,7 @@
  */
 #include "Population.h"
 #include "Item.h"
+#include "DEMain.h"
 #include <iostream>
 #include <sstream>
 #include <fstream>
@@ -30,12 +31,15 @@ string exec(const char* cmd) {
 }
 
 int main(){
+	const int kmax = 20;
+	const int gen = 10;
 	string ip_file, ip, lines, buffer, item;
 	int val, dim, counter = 0;
 	Item** objects;
 	int** track;
 	cout << "Enter your file name";
-	cin >> ip_file;
+	//cin >> ip_file;
+	 ip_file = "glass.csv";
 	ip = "wc -l " + ip_file; // find the number of lines in csv file that determines the number of items to cluster.
 	lines = exec(ip.c_str());
 	if(!lines.empty()){
@@ -84,8 +88,9 @@ int main(){
 				cout << endl;
 				counter++;
 			}
-
-
+		DEMain obj(kmax, dim-2, gen, track, objects, val);
+		obj.setup(min, max);
+		obj.run();
 	}
 }
 
