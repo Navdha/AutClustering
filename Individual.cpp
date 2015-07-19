@@ -28,6 +28,7 @@ Individual::Individual(int kmax, int dim) {
 
 Individual::~Individual() {
 	// TODO Auto-generated destructor stub
+	cout << "Destructor called" << endl;
 	for(int i = 0; i < k; ++i) {
 	    delete [] clusCenter[i];
 	}

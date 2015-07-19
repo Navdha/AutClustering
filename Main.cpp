@@ -32,7 +32,7 @@ string exec(const char* cmd) {
 
 int main(){
 	const int kmax = 20;
-	const int gen = 10;
+	const int gen = 2;
 	string ip_file, ip, lines, buffer, item;
 	int val, dim, counter = 0;
 	Item** objects;
@@ -73,8 +73,9 @@ int main(){
 				for(int i = 0; i < dim-2; i++)
 				     {
 						getline(in, item, ',');
-						cout << item << " ";
-						double value = atoi(item.c_str());
+						//cout << item << " ";
+						double value = atof(item.c_str());
+						//cout << value << " ";
 						objects[counter]->items[i] = value;
 						if(min[i] > value){
 							min[i] = value;
@@ -85,12 +86,21 @@ int main(){
 						getline(in, item, ',');
 						objects[counter]->typeClass = atoi(item.c_str());
 				     }
-				cout << endl;
+				//cout << endl;
 				counter++;
 			}
+		cout << "The arrays are " <<endl;
+		for(int i = 0; i < dim-2; i++){
+					cout << min[i] << " ";
+
+				}
+		cout <<endl;
+		for(int i = 0; i < dim-2; i++){
+		cout << max[i] << " ";
+		}
 		DEMain obj(kmax, dim-2, gen, track, objects, val);
 		obj.setup(min, max);
-		obj.run();
+		//obj.run();
 	}
 }
 

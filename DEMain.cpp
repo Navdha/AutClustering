@@ -85,9 +85,8 @@ void DEMain::setup(double min[], double max[]) {
 	//initialize chromosomes for the first time
 	cout<< "Setup method called" <<endl;
 	for (int i = 0; i < pSize; i++) {
-		Individual* temp;
+		Individual* temp = new Individual(kmax, dim);
 		int ctr_act = 0;
-		temp = new Individual(kmax, dim);
 		for (int j = 0; j < kmax; j++) {
 			temp->threshold[j] = uniform01();
 		//	cout << temp->threshold[j];
@@ -98,6 +97,7 @@ void DEMain::setup(double min[], double max[]) {
 				temp->active[j] = false;
 			temp->active_ctr = ctr_act;
 			for (int k = 0; k < dim; k++) {
+			//	cout << min[k] << " " << max[k] << endl;
 				temp->clusCenter[j][k] = uniformInRange(min[k], max[k]);
 			}
 		}
@@ -105,7 +105,18 @@ void DEMain::setup(double min[], double max[]) {
 		temp->setFitness(fitn);
 		//delete p->chromosome[i];
 		p->chromosome[i] = temp;
+		//delete temp;
+
 	}
+
+	for (int i = 0; i < pSize; i++) {
+				for (int j = 0; j < kmax; j++) {
+					for (int k = 0; k < dim; k++) {
+						cout << p->chromosome[i]->clusCenter[j][k] << " ";
+					}
+				}
+				cout << endl;
+			}
 }
 
 double DEMain::dist(double* x, double* y) {
@@ -130,7 +141,7 @@ double* DEMain::avgDist(Individual* org) {
 			double sum = 0.0;
 			delete [] d2;
 			d2 = org->clusCenter[i];
-			delete [] c;
+//			delete [] c;
 			c = org->clusters[i];
 			//for(vector<int>::iterator it = c[i]->begin(); it != c[i]->end(); ++it) {
 			//for (vector<int>::size_type j = 0; j != size; j++) {
@@ -205,7 +216,7 @@ double DEMain::calcFitness(Individual* org, int index, bool isInitial) {// not u
 	double maxValue = 0.0;
 	double sum = 0.0;
 	double eps = 0.5;
-	double* avgArr;
+	//double* avgArr;
 	int str_size = numItems * (org->active_ctr);
 	cout << str_size << endl;
 	Dist_IC knn [str_size];
@@ -218,10 +229,12 @@ double DEMain::calcFitness(Individual* org, int index, bool isInitial) {// not u
 	 */
 	int ctr = 0;
 	int vals = 0;
-	double min = numeric_limits<double>::max();
-	int min_index = -1;
+
+
 	//nearest_dist = new std::vector<std::pair<double, int> >*[numItems];
 	while (ctr < numItems && vals < str_size) { //form clusters
+		int min_index = -1;
+		double min = numeric_limits<double>::max();
 		//all_nearest_dist.push_back(nearest_dist);
 		for (int i = 0; i < kmax; i++) {
 			//nearest_dist = new std::vector<std::pair<double, int> >;
@@ -271,7 +284,16 @@ double DEMain::calcFitness(Individual* org, int index, bool isInitial) {// not u
 			}
 		}
 	}
-	avgArr = avgDist(org);
+	double avgArr[kmax];
+	for (int i = 0; i < kmax; i++) {
+		if (org->active[i]) {
+			for (std::vector<int>::const_iterator j = org->clusters[i]->begin(); j != org->clusters[i]->end(); ++j) {
+				sum += dist(attr[*j]->items, org->clusCenter[i]);
+			}
+			avgArr[i] = sum / (org->clusters[i]->size());
+		}
+	}
+	//avgArr = avgDist(org);
 	cout << "BAck to calcFitness" << endl;
 	for (int i = 0; i < kmax; i++) {
 		maxValue = 0.0;
@@ -312,6 +334,7 @@ void DEMain::selectSamples(int org, int *s1, int *s2, int *s3) {
 			*s3 = uniformInRange(0, pSize);
 		} while ((*s3 == org) || (*s3 == *s2) || (*s3 == *s1));
 	}
+	cout << "selectSamples called" << endl;
 	return;
 }
 
@@ -320,7 +343,9 @@ Individual* DEMain::crossover(int org, int gen) {
 	int s1, s2, s3;
 	double cr_prob = probability * ((generations - gen) / generations);
 	double f_scale = scale * uniform01();
+	//cout << cr_prob << " " << f_scale << " prob & scale factor" << endl;
 	selectSamples(org, &s1, &s2, &s3);
+	//cout << "s1, s2, s3 " << s1 << " " << s2 << " " << s3 << endl;
 	Individual* child = new Individual(kmax, dim);
 	for (int j = 0; j < kmax; j++) {
 		child->threshold[j] = uniform01();
@@ -329,13 +354,16 @@ Individual* DEMain::crossover(int org, int gen) {
 		else
 			child->active[j] = false;
 		for (int i = 0; i < dim; i++) {
+//			if(child->active[j])
 			if (uniform01() < cr_prob) {
 				child->clusCenter[j][i] =
 						p->chromosome[s1]->clusCenter[j][i]	+ f_scale*(abs(p->chromosome[s2]->clusCenter[j][i]- p->chromosome[s3]->clusCenter[j][i]));
+				cout << p->chromosome[s1]->clusCenter[j][i] << " " << p->chromosome[s2]->clusCenter[j][i] <<  " " << p->chromosome[s3]->clusCenter[j][i] << " " << child->clusCenter[j][i] << endl;
 			} else
 				child->clusCenter[j][i] = p->chromosome[org]->clusCenter[j][i];
 		}
 	}
+
 	return child;
 
 }
@@ -343,29 +371,35 @@ Individual* DEMain::crossover(int org, int gen) {
 void DEMain::run() {
 	cout << "run method called" << endl;
 	int i = 0;
-	Individual* offspring;
+	Individual *offspring;
 	Population* newpop;
 	bool new_pop[pSize]; //is this really saving time? since we have two for loops
 	while (i < generations) {
 		for (int c = 0; c < pSize; c++) {
+			cout << c << " iteration" << endl;
 			offspring = crossover(c, i);
 			double fitness = calcFitness(offspring, c, false);
 			offspring->setFitness(fitness);
 			if (p->chromosome[c]->rawFitness <= offspring->rawFitness) {
 				new_pop[c] = true;
-			} else
+			} else {
 				new_pop[c] = false;
+			}
 		}
+		cout << "Generation " << i << " completed" << endl;
 		newpop = new Population(kmax, dim);
 		assert(newpop != NULL);
 		for (int c = 0; c < pSize; c++) {
 			if (new_pop[c]) {
+				cout << "offspring added" << endl;
 				newpop->chromosome[c] = offspring;
 				delete p->chromosome[c];
 				for(int d = 0; d < numItems; d++){
 					tracker[d][c] = offspring_arr[d];
 				}
 			} else {
+				cout << "offspring discarded" << endl;
+				delete offspring;
 				newpop->chromosome[c] = p->chromosome[c];
 				delete offspring_arr;
 			}
