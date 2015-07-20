@@ -82,6 +82,12 @@ DEMain::~DEMain() {
 	delete[] attr;
 }
 
+/* This method takes an input two arrays min and max
+ * that hold the minimum and maximum value of each attribute
+ * Purpose of this method is to setup the initial population
+ * return type is void
+ * no output expected
+ */
 void DEMain::setup(double min[], double max[]) {
 	//initialize chromosomes for the first time
 	cout<< "Setup method called" <<endl;
@@ -96,13 +102,13 @@ void DEMain::setup(double min[], double max[]) {
 				ctr_act++;
 			} else
 				temp->active[j] = false;
-			temp->active_ctr = ctr_act;
 			for (int k = 0; k < dim; k++) {
 			//	cout << min[k] << " " << max[k] << endl;
 				temp->clusCenter[j][k] = uniformInRange(min[k], max[k]);
 				//cout << temp->clusCenter[j][k] << " ";
 			}
 		}
+		temp->active_ctr = ctr_act;
 		cout << endl;
 		double fitn = calcFitness(temp, i, true);
 		temp->setFitness(fitn);
@@ -111,8 +117,17 @@ void DEMain::setup(double min[], double max[]) {
 		//delete temp;
 
 	}
+
+
 }
 
+
+/*
+ * Input parameters: pointers to arrays that hold
+ * cluster center and item features
+ * This method finds the distance between cluster center and an item
+ * returns the distance calculated
+ */
 double DEMain::dist(double* x, double* y) {
 	double Sum;
 	double distance;
@@ -123,7 +138,7 @@ double DEMain::dist(double* x, double* y) {
 	return distance;
 }
 
-double* DEMain::avgDist(Individual* org) {
+/*double* DEMain::avgDist(Individual* org) {
 	cout << "avgDist function called" << endl;
 	double* temp = new double[kmax];
 	//double *tempArr = &temp;
@@ -148,7 +163,7 @@ double* DEMain::avgDist(Individual* org) {
 	}
 
 	return temp;
-}
+}*/
 
 /*int DEMain :: compare(const void *p1, const void *p2) {
 	Dist_IC *elem1 = (Dist_IC *)p1;
@@ -161,6 +176,12 @@ double* DEMain::avgDist(Individual* org) {
 		return 0;
 }*/
 
+/*
+ * Input parameters : A pointer to a chromosome, struct array that holds distance corresponding
+ * to item and cluster center, size of the struct array and index of population's chromosome
+ * This method reshuffles items equally into different active cluster centers of an individual
+ * return type : void
+ */
 void DEMain :: reshuffle(Individual* org, Dist_IC *nearestDist, int size, int ind){//need to think
 	cout << "reshuffle method called" <<endl;
 
@@ -205,6 +226,12 @@ void DEMain :: reshuffle(Individual* org, Dist_IC *nearestDist, int size, int in
 	//delete org->clusters;
 }
 
+/*
+ * Input parameters : Pointer to chromosome, index of population's chromosome,
+ * bool parameter to know whether function called during initial setup or during DE
+ * This method calculates the fitness of a chromosome and returns it
+ * return  type : double
+ */
 double DEMain::calcFitness(Individual* org, int index, bool isInitial) {// not using index right now
 	cout << "calcFitness method called" << endl;
 	double fit = 0.0;
@@ -214,7 +241,7 @@ double DEMain::calcFitness(Individual* org, int index, bool isInitial) {// not u
 	//double* avgArr;
 	int str_size = numItems * (org->active_ctr);
 	cout << str_size << endl;
-	Dist_IC knn [str_size];
+	Dist_IC* knn = new Dist_IC [str_size];
 	//std::vector<std::pair<double, int> > nearest_dist;
 	//std::vector<std::vector< std::pair<double, int>>> all_nearest_dist;
 	/* for each item read from csv, find distance of each item from the active cluster center
@@ -272,7 +299,7 @@ double DEMain::calcFitness(Individual* org, int index, bool isInitial) {// not u
 			if (org->clusters[i]->size() < 2) {
 				//org->setValid(false);
 				//reshuffle items in clusters
-				qsort(&knn, str_size, sizeof(Dist_IC), compare);
+				qsort(knn, str_size, sizeof(Dist_IC), compare);
 			//	for (int n=0; n<str_size; n++)
 				    // printf ("Sorted dist = %f item = %d  cluster_ind = %d \n",knn[n].distance, knn[n].itemIndex, knn[n].clustIndex);
 				reshuffle(org, knn, str_size, index);
@@ -307,9 +334,16 @@ double DEMain::calcFitness(Individual* org, int index, bool isInitial) {// not u
 	}
 	double avg = sum / org->active_ctr;
 	fit = 1 / (avg + eps);
-	delete org->clusters;
+	//delete org->clusters;
+	delete [] knn;
 	return fit;
 }
+
+/*
+ * Input parameters : indexes for chromosomes
+ * This method makes sure that we get unique indexes for performing crossover
+ * return type: void
+ */
 
 void DEMain::selectSamples(int org, int *s1, int *s2, int *s3) {
 	if (s1) {
@@ -333,6 +367,11 @@ void DEMain::selectSamples(int org, int *s1, int *s2, int *s3) {
 	return;
 }
 
+/*
+ * Input parameters: index for chromosome chosen and the generation number
+ * This method performs crossover to create an offspring
+ * returns pointer to offspring created
+ */
 Individual* DEMain::crossover(int org, int gen) {
 	cout << "crossover method called" << endl;
 	int s1, s2, s3;
@@ -351,7 +390,7 @@ Individual* DEMain::crossover(int org, int gen) {
 		}
 		else
 			child->active[j] = false;
-		child->active_ctr = counter;
+
 		for (int i = 0; i < dim; i++) {
 //			if(child->active[j])
 			if (uniform01() < cr_prob) {
@@ -362,16 +401,19 @@ Individual* DEMain::crossover(int org, int gen) {
 				child->clusCenter[j][i] = p->chromosome[org]->clusCenter[j][i];
 		}
 	}
-
+	child->active_ctr = counter;
 	return child;
 
 }
 
+/*
+ * This method runs the DE algorithm
+ */
 void DEMain::run() {
 	cout << "run method called" << endl;
 	int i = 0;
 	Population* newpop = new Population(kmax, dim);
-	//bool new_pop[pSize]; //is this really saving time? since we have two for loops
+	bool * new_pop = new bool[pSize];
 	try {
 	while (i < generations) {
 		for (int c = 0; c < pSize; c++) {
@@ -382,15 +424,15 @@ void DEMain::run() {
 			offspring->setFitness(fitness);
 			if (p->chromosome[c]->rawFitness <= offspring->rawFitness) {
 				//cout << "Good offspring" << endl;
-				//new_pop[c] = true;
+				new_pop[c] = true;
 				cout << "offspring added" << endl;
 				newpop->chromosome[c] = offspring;
-				delete p->chromosome[c];
+				//delete p->chromosome[c];
 				for (int d = 0; d < numItems; d++) {
 					tracker[d][c] = offspring_arr[d];
 				}
 			} else {
-				//new_pop[c] = false;
+				new_pop[c] = false;
 				//cout << "Bad offspring" << endl;
 				cout << "offspring discarded" << endl;
 				delete offspring;
@@ -399,22 +441,14 @@ void DEMain::run() {
 			}
 		}
 		cout << "Generation " << i << " completed" << endl;
-		/*assert(newpop != NULL);
+		//assert(newpop != NULL);
 		for (int c = 0; c < pSize; c++) {
 			if (new_pop[c]) {
-				cout << "offspring added" << endl;
-				newpop->chromosome[c] = offspring;
 				delete p->chromosome[c];
-				for(int d = 0; d < numItems; d++){
-					tracker[d][c] = offspring_arr[d];
-				}
 			} else {
-				cout << "offspring discarded" << endl;
-				delete offspring;
-				newpop->chromosome[c] = p->chromosome[c];
-				delete offspring_arr;
+
 			}
-		}*/
+		}
 		delete p;
 		p = newpop;
 		i++;
@@ -438,6 +472,11 @@ void DEMain::run() {
 	   }
 }
 
+/*
+ * Input parameter : index for the best chromosome of the population
+ * This method outputs the clusters for the best chromosome in the population to a file
+ * return type : void
+ */
 void DEMain::report(int index) {
 	ofstream outputFile;
 	outputFile.open("data.txt");

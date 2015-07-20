@@ -28,15 +28,15 @@ Individual::Individual(int kmax, int dim) {
 
 Individual::~Individual() {
 	// TODO Auto-generated destructor stub
-	//cout << "Destructor called" << endl;
+	cout << "Destructor called" << endl;
 	for(int i = 0; i < k; ++i) {
 	    delete [] clusCenter[i];
-	    //delete clusters[i];
+	    delete clusters[i];
 	}
 	delete [] clusCenter;
 	delete [] active;
 	delete [] threshold;
-	//delete [] clusters;
+	delete [] clusters;
 
 }
 
