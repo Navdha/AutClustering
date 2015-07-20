@@ -100,7 +100,7 @@ int main(){
 		}
 		DEMain obj(kmax, dim-2, gen, track, objects, val);
 		obj.setup(min, max);
-		//obj.run();
+		obj.run();
 	}
 }
 

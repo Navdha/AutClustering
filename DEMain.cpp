@@ -15,6 +15,7 @@
 #include <functional> // needed for bind
 //#include <utility>
 #include <algorithm>
+#include <stdexcept>
 
 using namespace std;
 
@@ -99,8 +100,10 @@ void DEMain::setup(double min[], double max[]) {
 			for (int k = 0; k < dim; k++) {
 			//	cout << min[k] << " " << max[k] << endl;
 				temp->clusCenter[j][k] = uniformInRange(min[k], max[k]);
+				//cout << temp->clusCenter[j][k] << " ";
 			}
 		}
+		cout << endl;
 		double fitn = calcFitness(temp, i, true);
 		temp->setFitness(fitn);
 		//delete p->chromosome[i];
@@ -108,15 +111,6 @@ void DEMain::setup(double min[], double max[]) {
 		//delete temp;
 
 	}
-
-	for (int i = 0; i < pSize; i++) {
-				for (int j = 0; j < kmax; j++) {
-					for (int k = 0; k < dim; k++) {
-						cout << p->chromosome[i]->clusCenter[j][k] << " ";
-					}
-				}
-				cout << endl;
-			}
 }
 
 double DEMain::dist(double* x, double* y) {
@@ -169,10 +163,11 @@ double* DEMain::avgDist(Individual* org) {
 
 void DEMain :: reshuffle(Individual* org, Dist_IC *nearestDist, int size, int ind){//need to think
 	cout << "reshuffle method called" <<endl;
-	delete org->clusters;
+
 	for(int i = 0; i < kmax; ++i) {
-		    delete [] org->clusCenter[i];
+		  delete org->clusters[i];
 		}
+	delete [] org->clusters;
 	int fix_size = numItems/kmax;
 	org->clusters = new vector<int>*[kmax];
 	for (int count = 0; count < kmax; count++)
@@ -347,18 +342,22 @@ Individual* DEMain::crossover(int org, int gen) {
 	selectSamples(org, &s1, &s2, &s3);
 	//cout << "s1, s2, s3 " << s1 << " " << s2 << " " << s3 << endl;
 	Individual* child = new Individual(kmax, dim);
+	int counter = 0;
 	for (int j = 0; j < kmax; j++) {
 		child->threshold[j] = uniform01();
-		if (child->threshold[j] > 0.5)
+		if (child->threshold[j] > 0.5){
 			child->active[j] = true;
+			counter++;
+		}
 		else
 			child->active[j] = false;
+		child->active_ctr = counter;
 		for (int i = 0; i < dim; i++) {
 //			if(child->active[j])
 			if (uniform01() < cr_prob) {
 				child->clusCenter[j][i] =
 						p->chromosome[s1]->clusCenter[j][i]	+ f_scale*(abs(p->chromosome[s2]->clusCenter[j][i]- p->chromosome[s3]->clusCenter[j][i]));
-				cout << p->chromosome[s1]->clusCenter[j][i] << " " << p->chromosome[s2]->clusCenter[j][i] <<  " " << p->chromosome[s3]->clusCenter[j][i] << " " << child->clusCenter[j][i] << endl;
+				//cout << p->chromosome[s1]->clusCenter[j][i] << " " << p->chromosome[s2]->clusCenter[j][i] <<  " " << p->chromosome[s3]->clusCenter[j][i] << " " << child->clusCenter[j][i] << endl;
 			} else
 				child->clusCenter[j][i] = p->chromosome[org]->clusCenter[j][i];
 		}
@@ -371,24 +370,36 @@ Individual* DEMain::crossover(int org, int gen) {
 void DEMain::run() {
 	cout << "run method called" << endl;
 	int i = 0;
-	Individual *offspring;
-	Population* newpop;
-	bool new_pop[pSize]; //is this really saving time? since we have two for loops
+	Population* newpop = new Population(kmax, dim);
+	//bool new_pop[pSize]; //is this really saving time? since we have two for loops
+	try {
 	while (i < generations) {
 		for (int c = 0; c < pSize; c++) {
 			cout << c << " iteration" << endl;
+			Individual *offspring;
 			offspring = crossover(c, i);
 			double fitness = calcFitness(offspring, c, false);
 			offspring->setFitness(fitness);
 			if (p->chromosome[c]->rawFitness <= offspring->rawFitness) {
-				new_pop[c] = true;
+				//cout << "Good offspring" << endl;
+				//new_pop[c] = true;
+				cout << "offspring added" << endl;
+				newpop->chromosome[c] = offspring;
+				delete p->chromosome[c];
+				for (int d = 0; d < numItems; d++) {
+					tracker[d][c] = offspring_arr[d];
+				}
 			} else {
-				new_pop[c] = false;
+				//new_pop[c] = false;
+				//cout << "Bad offspring" << endl;
+				cout << "offspring discarded" << endl;
+				delete offspring;
+				newpop->chromosome[c] = p->chromosome[c];
+				delete [] offspring_arr;
 			}
 		}
 		cout << "Generation " << i << " completed" << endl;
-		newpop = new Population(kmax, dim);
-		assert(newpop != NULL);
+		/*assert(newpop != NULL);
 		for (int c = 0; c < pSize; c++) {
 			if (new_pop[c]) {
 				cout << "offspring added" << endl;
@@ -403,7 +414,7 @@ void DEMain::run() {
 				newpop->chromosome[c] = p->chromosome[c];
 				delete offspring_arr;
 			}
-		}
+		}*/
 		delete p;
 		p = newpop;
 		i++;
@@ -421,6 +432,10 @@ void DEMain::run() {
 	}
 	assert(bestInd != -1);
 	report(bestInd);
+	}
+	catch (exception& e) {
+	     cerr << e.what() << endl;
+	   }
 }
 
 void DEMain::report(int index) {

@@ -30,7 +30,7 @@ public:
 	void setValid(bool valid);
 	double getFitness();
 	void setFitness(double rawFitness);
-	bool operator<=(const Individual& right);
+	//bool operator<=(const Individual& right);
 };
 
 #endif /* INDIVIDUAL_H_ */
