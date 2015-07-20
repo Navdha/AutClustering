@@ -71,6 +71,7 @@ DEMain::DEMain(int kmax, int dim, int gen, int** placeholder, Item** items,
 
 DEMain::~DEMain() {
 	// TODO Auto-generated destructor stub
+//	cout << "DEMAIN destructor" << endl;
 	delete p;
 	for (int i = 0; i < numItems; i++)
 		delete tracker[i];
@@ -114,6 +115,7 @@ void DEMain::setup(double min[], double max[]) {
 		temp->setFitness(fitn);
 		//delete p->chromosome[i];
 		p->chromosome[i] = temp;
+		cout << "Exiting setup" <<endl;
 		//delete temp;
 
 	}
@@ -348,19 +350,19 @@ double DEMain::calcFitness(Individual* org, int index, bool isInitial) {// not u
 void DEMain::selectSamples(int org, int *s1, int *s2, int *s3) {
 	if (s1) {
 		do {
-			*s1 = uniformInRange(0, pSize);
+			*s1 = uniformInRange(0, pSize-1);
 		} while (*s1 == org);
 	}
 
 	if (s2) {
 		do {
-			*s2 = uniformInRange(0, pSize);
+			*s2 = uniformInRange(0, pSize-1);
 		} while ((*s2 == org) || (*s2 == *s1));
 	}
 
 	if (s3) {
 		do {
-			*s3 = uniformInRange(0, pSize);
+			*s3 = uniformInRange(0, pSize-1);
 		} while ((*s3 == org) || (*s3 == *s2) || (*s3 == *s1));
 	}
 	cout << "selectSamples called" << endl;
@@ -390,10 +392,13 @@ Individual* DEMain::crossover(int org, int gen) {
 		}
 		else
 			child->active[j] = false;
-
+		cout << "crossover::about to enter for loop" << endl;
 		for (int i = 0; i < dim; i++) {
+			cout << "crossover::"  << org << endl;
+			assert(p->chromosome[org] != NULL);
 //			if(child->active[j])
 			if (uniform01() < cr_prob) {
+				cout << "s1, s2, s3 " << s1 << " " << s2 << " " << s3 << endl;
 				child->clusCenter[j][i] =
 						p->chromosome[s1]->clusCenter[j][i]	+ f_scale*(abs(p->chromosome[s2]->clusCenter[j][i]- p->chromosome[s3]->clusCenter[j][i]));
 				//cout << p->chromosome[s1]->clusCenter[j][i] << " " << p->chromosome[s2]->clusCenter[j][i] <<  " " << p->chromosome[s3]->clusCenter[j][i] << " " << child->clusCenter[j][i] << endl;
@@ -445,11 +450,9 @@ void DEMain::run() {
 		for (int c = 0; c < pSize; c++) {
 			if (new_pop[c]) {
 				delete p->chromosome[c];
-			} else {
-
 			}
 		}
-		delete p;
+		delete [] p->chromosome;
 		p = newpop;
 		i++;
 	}
