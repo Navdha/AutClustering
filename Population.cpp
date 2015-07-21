@@ -24,6 +24,7 @@ Population::Population(int kmax, int dim){
 }
 Population::~Population() {
 	// TODO Auto-generated destructor stub
+	//cout << "Pop destructor" << endl;
 	for (int i = 0; i < size; i++)
 	    delete chromosome[i];
 
@@ -33,6 +34,10 @@ Population::~Population() {
 void Population:: setIndividial(Individual* individual, int index){
 	delete chromosome[index];
 	chromosome[index] = individual;
+}
+
+void Population::print(int index){
+	cout << "# of active cluster centers " << chromosome[index]->active_ctr << endl;
 }
 
 /*Individual Population::getIndividual(int index){

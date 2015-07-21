@@ -20,6 +20,7 @@ public:
 
 	int size;
 	Individual** chromosome;//change name
+	void print(int index);
 	//int bestChromosomeIndex;
 	//int worstChromosomeIndex;
 };

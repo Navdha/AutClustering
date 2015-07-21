@@ -14,7 +14,7 @@ using namespace std;
 class Individual {
 public:
 	Individual(int kmax, int dim);
-	virtual ~Individual();
+	~Individual();
 
 	double rawFitness;
 	bool valid;
@@ -23,7 +23,7 @@ public:
 	bool* active;
 	int active_ctr;
 	int k;
-	vector<int>** clusters;
+	//vector<int>** clusters;
 
 	bool isValid();
 	bool getValid();

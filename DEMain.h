@@ -17,7 +17,8 @@
 #include <vector>
 #include <cstdlib>
 
-struct Dist_IC {
+class Dist_IC {
+public:
 		double distance;
 		int itemIndex;
 		int clustIndex;
@@ -50,6 +51,9 @@ public:
 	int numItems;
 	int** tracker;
 	Item** attr;
+	vector<int>** clusters;
+	Dist_IC* knn;
+	int* offspring_arr;
 
 private:
 	void Rand1Bin(int candIndex);
