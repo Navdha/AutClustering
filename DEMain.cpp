@@ -325,6 +325,7 @@ double DEMain::calcFitness(Individual* org, int index, bool isInitial) {// not u
 				//for (int n=0; n<10; n++)
 				   // printf ("Sorted dist = %f item = %d  cluster_ind = %d \n",knn[n].distance, knn[n].itemIndex, knn[n].clustIndex);
 				reshuffle(org, str_size, index, isInitial);
+				break;
 			}
 		}
 	}
@@ -337,7 +338,7 @@ double DEMain::calcFitness(Individual* org, int index, bool isInitial) {// not u
 				//cout << *j << " ";
 				sum += dist(attr[*j]->items, org->clusCenter[i]);
 			}
-			avgArr[i] = sum / clusters[i]->size();
+			avgArr[i] = sqrt(sum / clusters[i]->size());
 		}
 		//cout << endl;
 	}
@@ -415,25 +416,27 @@ Individual* DEMain::crossover(int org, int gen) {
 	Individual* child = new Individual(kmax, dim);
 	int counter = 0;
 	for (int j = 0; j < kmax; j++) {
+		if(uniform01() < cr_prob){
+			child->threshold[j] =  p->chromosome[s1]->threshold[j] +
+														f_scale*(p->chromosome[s2]->threshold[j] -  p->chromosome[s3]->threshold[j]);
+		}
+		else{
+			child->threshold[j] =  p->chromosome[org]->threshold[j];
+		}
 		//child->threshold[j] = uniform01();
 		for (int i = 0; i < dim; i++) {
 			//cout << "crossover::"  << org << endl;
 			assert(p->chromosome[org] != NULL);
 			if (uniform01() < cr_prob) {
 				child->clusCenter[j][i] = p->chromosome[s1]->clusCenter[j][i]
-									    + f_scale*(abs(p->chromosome[s2]->clusCenter[j][i]- p->chromosome[s3]->clusCenter[j][i]));
-				if(i == 0){
-					child->threshold[j] =  p->chromosome[s1]->threshold[j] +
-											f_scale*(abs( p->chromosome[s2]->threshold[j] -  p->chromosome[s3]->threshold[j]));
+									    + f_scale*(p->chromosome[s2]->clusCenter[j][i]- p->chromosome[s3]->clusCenter[j][i]);
 
-				}
 				//cout << p->chromosome[s1]->clusCenter[j][i] << " " << p->chromosome[s2]->clusCenter[j][i] <<  " " << p->chromosome[s3]->clusCenter[j][i] << " " << child->clusCenter[j][i] << endl;
 			} else {
 				child->clusCenter[j][i] = p->chromosome[org]->clusCenter[j][i];
-				if(i == 0){
-					child->threshold[j] =  p->chromosome[org]->threshold[j];
-				}
+
 			}
+
 
 		}
 		if (child->threshold[j] > 1 || child->threshold[j] < 0)
@@ -536,6 +539,7 @@ void DEMain::report(int index) {
 	for(int i = 0; i < kmax; ++i) {
 			clusters[i]->clear();
 		}
+
 	Individual* org = p->chromosome[index];
 	for(int i = 0; i < numItems; i++){
 		clus_index = tracker[i][index];
@@ -562,9 +566,41 @@ void DEMain::report(int index) {
 			}
 		}
 	}
+		for (int i = 0; i < kmax; ++i) {
+			clusters[i]->clear();
+		}
+		for(int i = 0; i < numItems; i++) {
+			int min_index = -1;
+			double min = numeric_limits<double>::max();
+			for (int j = 0; j < kmax; j++) {
+				if (org->active[j]) {
+					double temp_dist = dist(org->clusCenter[j], attr[i]->items);
+					if (temp_dist < min) {
+						min = temp_dist;
+						min_index = j;
+					}
+				}
+			}
+			assert(min_index != -1);
+			clusters[min_index]->push_back(i);
+		}
+		for (int k = 0; k < kmax; k++) {
+				if (org->active[k] && !clusters[k]->empty()) {
+					outputFile << "------------------------------------------------------------" << endl;
+					outputFile << "Elements of cluster : " << endl;
+					for (std::vector<int>::const_iterator j = clusters[k]->begin();j != clusters[k]->end(); ++j) {
+						arr = attr[*j]->items;
+						for (int m = 0; m < dim; m++) {
+							outputFile << arr[m] << " ";
+						}
+						outputFile << endl;
+					}
+				}
+			}
 
 	outputFile << "Total number of clusters obtained : " << activeCount
 				<< endl;
+	outputFile << "Min DB is " << minDB << " Max DB is " << maxDB << endl;
 	outputFile.close();
 	cout << "Result saved in file.";
 }
