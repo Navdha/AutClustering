@@ -562,6 +562,7 @@ void DEMain::report(int index) {
 				for (int m = 0; m < dim; m++) {
 					outputFile << arr[m] << " ";
 				}
+				outputFile << attr[*j]->typeClass;
 				outputFile << endl;
 			}
 		}
@@ -585,9 +586,9 @@ void DEMain::report(int index) {
 			clusters[min_index]->push_back(i);
 		}
 		for (int k = 0; k < kmax; k++) {
-				if (org->active[k] && !clusters[k]->empty()) {
+				if (org->active[k]) {
 					outputFile << "------------------------------------------------------------" << endl;
-					outputFile << "Elements of cluster : " << endl;
+					outputFile << "Elements of cluster : " << k << endl;
 					for (std::vector<int>::const_iterator j = clusters[k]->begin();j != clusters[k]->end(); ++j) {
 						arr = attr[*j]->items;
 						for (int m = 0; m < dim; m++) {

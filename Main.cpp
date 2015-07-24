@@ -32,7 +32,7 @@ string exec(const char* cmd) {
 
 int main(){
 	const int kmax = 20;
-	const int gen = 1000;
+	const int gen = 100;
 	string ip_file, ip, lines, buffer, item;
 	int val, dim, counter = 0;
 	Item** objects;
