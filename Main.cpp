@@ -46,15 +46,16 @@ int main(){
 		val = atoi(lines.c_str());
 	}
 	ip = "head -1 " + ip_file + " | grep -o ',' | wc -l"; // find the number of commas to determine the number of features.
-	lines = exec(ip.c_str());
+	lines = exec(ip.c_str()); //rename lines to numCommas
 	if(!lines.empty()){
 		dim = atoi(lines.c_str());
 	}
+	int numFeatures = dim -1;
 	if(val > 0){
-		int col = 10*(dim-2);
-		double min [dim-2];
-		double max [dim-2];
-		for(int i = 0; i < dim-2; i++){
+		int col = 10*(numFeatures);//rename to popSize
+		double min [numFeatures];
+		double max [numFeatures];
+		for(int i = 0; i < numFeatures; i++){
 			min[i] = std::numeric_limits<double>::max();
 			max[i] = std::numeric_limits<double>::min();
 		}
@@ -62,15 +63,14 @@ int main(){
 		track=new int* [val];
 		for(int i = 0; i < val; i++){
 			track[i] = new int[col];
-			track[i][0] = i;
 		}
 		ifstream input_stream(ip_file.c_str());
 		while (getline(input_stream, buffer, '\n'))
 			{
 				istringstream in(buffer);
-				objects[counter] = new Item(dim-2);
+				objects[counter] = new Item(numFeatures);
 				getline(in, item, ',');
-				for(int i = 0; i < dim-2; i++)
+				for(int i = 0; i < numFeatures; i++)
 				     {
 						getline(in, item, ',');
 						//cout << item << " ";
@@ -83,22 +83,23 @@ int main(){
 						if(max[i] < value){
 							max[i] = value;
 						}
-						getline(in, item, ',');
-						objects[counter]->typeClass = atoi(item.c_str());
 				     }
+				getline(in, item, ',');
+				objects[counter]->typeClass = atoi(item.c_str());
 				//cout << endl;
 				counter++;
 			}
 		cout << "The arrays are " <<endl;
-		for(int i = 0; i < dim-2; i++){
+		for(int i = 0; i < numFeatures; i++){
 					cout << min[i] << " ";
 
 				}
 		cout <<endl;
-		for(int i = 0; i < dim-2; i++){
+		for(int i = 0; i < numFeatures; i++){
 		cout << max[i] << " ";
 		}
-		DEMain obj(kmax, dim-2, gen, track, objects, val);
+
+		DEMain obj(kmax, numFeatures, gen, track, objects, val);
 		obj.setup(min, max);
 		obj.run();
 	}

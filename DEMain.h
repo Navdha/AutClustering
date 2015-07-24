@@ -37,7 +37,7 @@ public:
 	Individual* crossover(int org, int generation);
 	void run();
 	void report(int index);
-	void reshuffle(Individual* org, Dist_IC *obj, int size, int index);
+	void reshuffle(Individual* org, int size, int index,  bool isInitial);
 
 
 	Population* p;
