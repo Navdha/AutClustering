@@ -34,35 +34,35 @@ auto uniform01 = bind(uniform_real_distribution<double>(0, 1), mt19937(seed()));
 
 /*int uniformInRange(int from, int to) { // generate a random uniformly in the range [from, to]
 
-	return  (rand() % (to - from+1) + from);
-}
-double uniformInRange(double from, double to) { // generate a random uniformly in the range [from, to]
-	return  uniformInRange((int)(from*10000), (int)(to*10000))/10000;
-}
+ return  (rand() % (to - from+1) + from);
+ }
+ double uniformInRange(double from, double to) { // generate a random uniformly in the range [from, to]
+ return  uniformInRange((int)(from*10000), (int)(to*10000))/10000;
+ }
 
-double uniform01(){
-	return uniformInRange(0.0, 100.0)/100.0;
-}*/
+ double uniform01(){
+ return uniformInRange(0.0, 100.0)/100.0;
+ }*/
 struct compare_first_only {
-    template<typename T1, typename T2>
-    bool operator()(const std::pair<T1, T2>& p1, const std::pair<T1, T2>& p2) {
-        return p1.first < p2.first;
-    }
+	template<typename T1, typename T2>
+	bool operator()(const std::pair<T1, T2>& p1, const std::pair<T1, T2>& p2) {
+		return p1.first < p2.first;
+	}
 };
 
+ofstream trackFile;
 double minDB = std::numeric_limits<double>::max();
-double maxDB= std::numeric_limits<double>::min();
-int compare(const void *p1, const void *p2){
-		Dist_IC *elem1 = (Dist_IC *)p1;
-		Dist_IC *elem2 = (Dist_IC *)p2;
-		if(elem1->distance < elem2->distance)
-			return -1;
-		else if(elem1->distance > elem2->distance)
-			return 1;
-		else
-			return 0;
-	}
-
+double maxDB = std::numeric_limits<double>::min();
+int compare(const void *p1, const void *p2) {
+	Dist_IC *elem1 = (Dist_IC *) p1;
+	Dist_IC *elem2 = (Dist_IC *) p2;
+	if (elem1->distance < elem2->distance)
+		return -1;
+	else if (elem1->distance > elem2->distance)
+		return 1;
+	else
+		return 0;
+}
 
 DEMain::DEMain(int kmax, int dim, int gen, int** placeholder, Item** items,
 		int itemSize) {
@@ -81,11 +81,10 @@ DEMain::DEMain(int kmax, int dim, int gen, int** placeholder, Item** items,
 	attr = items;
 	clusters = new vector<int>*[kmax];
 	offspring_arr = new int[numItems];
-	for (int count = 0; count < kmax; count++)
-		{
-		  clusters[count] = new vector<int>;
-		}
-	int size = kmax*numItems;
+	for (int count = 0; count < kmax; count++) {
+		clusters[count] = new vector<int>;
+	}
+	int size = kmax * numItems;
 	knn = new Dist_IC[size];
 }
 
@@ -93,18 +92,18 @@ DEMain::~DEMain() {
 	// TODO Auto-generated destructor stub
 //	cout << "DEMAIN destructor" << endl;
 	delete p;
-	for (int i = 0; i < numItems; i++){
+	for (int i = 0; i < numItems; i++) {
 		delete tracker[i];
 		delete attr[i];
 	}
-	for(int i = 0; i < kmax; ++i) {
-		  delete clusters[i];
+	for (int i = 0; i < kmax; ++i) {
+		delete clusters[i];
 	}
 	delete[] tracker;
 	delete[] attr;
-	delete [] clusters;
-	delete [] offspring_arr;
-	delete [] knn;
+	delete[] clusters;
+	delete[] offspring_arr;
+	delete[] knn;
 }
 
 /* This method takes an input two arrays min and max
@@ -115,40 +114,40 @@ DEMain::~DEMain() {
  */
 void DEMain::setup(double min[], double max[]) {
 	//initialize chromosomes for the first time
-	cout<< "Setup method called" <<endl;
+	cout << "Setup method called" << endl;
 	for (int i = 0; i < pSize; i++) {
 //for (int i = 0; i < 2; i++) {
 		Individual* temp = new Individual(kmax, dim);
 		int ctr_act = 0;
 		for (int j = 0; j < kmax; j++) {
 			temp->threshold[j] = uniform01();
-		//	cout << temp->threshold[j];
+			//	cout << temp->threshold[j];
 			if (temp->threshold[j] > 0.5) {
 				temp->active[j] = true;
 				ctr_act++;
 			} else
 				temp->active[j] = false;
 			for (int k = 0; k < dim; k++) {
-			//	cout << min[k] << " " << max[k] << endl;
+				//	cout << min[k] << " " << max[k] << endl;
 				temp->clusCenter[j][k] = uniformInRange(min[k], max[k]);
 				//cout << temp->clusCenter[j][k] << " ";
 			}
 		}
 		/*if(i == pSize -1){
-		temp->threshold[kmax-1] = 0.6;
-		temp->active[kmax-1] = true;
-		for(int k = 0; k < dim; k++) {
-		temp->clusCenter[kmax-1][k] = max[k]+10;
-		}
-		}*/
+		 temp->threshold[kmax-1] = 0.6;
+		 temp->active[kmax-1] = true;
+		 for(int k = 0; k < dim; k++) {
+		 temp->clusCenter[kmax-1][k] = max[k]+10;
+		 }
+		 }*/
 		assert(ctr_act <= kmax);
 		temp->active_ctr = ctr_act;
 		//code to check kmin = 2
-		if(temp->active_ctr < 2){
+		if (temp->active_ctr < 2) {
 			int num = temp->active_ctr;
 			while (num < 2) {
 				int i = uniformInRange(0, kmax - 1);
-				if(!temp->active[i]){
+				if (!temp->active[i]) {
 					temp->threshold[i] = uniformInRange(0.5, 1.0);
 					temp->active[i] = true;
 					temp->active_ctr++;
@@ -160,10 +159,17 @@ void DEMain::setup(double min[], double max[]) {
 		temp->setFitness(fitn);
 		p->chromosome[i] = temp;
 	}
-
+	int bestInd = 0;
+	double fitness = p->chromosome[0]->rawFitness;
+	for (int k = 1; k < pSize; k++) {
+		if (fitness < p->chromosome[k]->rawFitness) {
+			bestInd = k;
+			fitness = p->chromosome[k]->rawFitness;
+		}
+	}
+	p->bestChromosomeIndex = bestInd;
 
 }
-
 
 /*
  * Input parameters: pointers to arrays that hold
@@ -178,47 +184,47 @@ double DEMain::dist(double* x, double* y) {
 		Sum = Sum + pow((x[i] - y[i]), 2.0);
 //		distance = sqrt(Sum);
 	}
-distance = sqrt(Sum);
+	distance = sqrt(Sum);
 	return distance;
 }
 
 /*double* DEMain::avgDist(Individual* org) {
-	cout << "avgDist function called" << endl;
-	double* temp = new double[kmax];
-	//double *tempArr = &temp;
-	double* d2;
-	vector<int>* c = new vector<int>;
-	//int ind = -1;
-	for (int i = 0; i < kmax; i++) {
-		if (org->active[i]) {
-			double sum = 0.0;
-			delete [] d2;
-			d2 = org->clusCenter[i];
-//			delete [] c;
-			c = org->clusters[i];
-			//for(vector<int>::iterator it = c[i]->begin(); it != c[i]->end(); ++it) {
-			//for (vector<int>::size_type j = 0; j != size; j++) {
-			for (std::vector<int>::const_iterator j = c->begin(); j != c->end();
-					++j) {
-				sum += dist(attr[*j]->items, d2);
-			}
-			temp[i] = sum / (c->size());
-		}
-	}
+ cout << "avgDist function called" << endl;
+ double* temp = new double[kmax];
+ //double *tempArr = &temp;
+ double* d2;
+ vector<int>* c = new vector<int>;
+ //int ind = -1;
+ for (int i = 0; i < kmax; i++) {
+ if (org->active[i]) {
+ double sum = 0.0;
+ delete [] d2;
+ d2 = org->clusCenter[i];
+ //			delete [] c;
+ c = org->clusters[i];
+ //for(vector<int>::iterator it = c[i]->begin(); it != c[i]->end(); ++it) {
+ //for (vector<int>::size_type j = 0; j != size; j++) {
+ for (std::vector<int>::const_iterator j = c->begin(); j != c->end();
+ ++j) {
+ sum += dist(attr[*j]->items, d2);
+ }
+ temp[i] = sum / (c->size());
+ }
+ }
 
-	return temp;
-}*/
+ return temp;
+ }*/
 
 /*int DEMain :: compare(const void *p1, const void *p2) {
-	Dist_IC *elem1 = (Dist_IC *)p1;
-	Dist_IC *elem2 = (Dist_IC *)p2;
-	if(elem1->distance < elem2->distance)
-		return -1;
-	else if(elem1->distance > elem2->distance)
-		return 1;
-	else
-		return 0;
-}*/
+ Dist_IC *elem1 = (Dist_IC *)p1;
+ Dist_IC *elem2 = (Dist_IC *)p2;
+ if(elem1->distance < elem2->distance)
+ return -1;
+ else if(elem1->distance > elem2->distance)
+ return 1;
+ else
+ return 0;
+ }*/
 
 /*
  * Input parameters : A pointer to a chromosome, struct array that holds distance corresponding
@@ -226,13 +232,13 @@ distance = sqrt(Sum);
  * This method reshuffles items equally into different active cluster centers of an individual
  * return type : void
  */
-void DEMain :: reshuffle(Individual* org, int size, int indpop, bool isInitial){//need to think
-	cout << "reshuffle method called" <<endl;
-	for(int i = 0; i < kmax; ++i) {
+void DEMain::reshuffle(Individual* org, int size, int indpop, bool isInitial) { //need to think
+	cout << "reshuffle method called" << endl;
+	for (int i = 0; i < kmax; ++i) {
 		clusters[i]->clear();
 	}
-	int fix_size = numItems/org->active_ctr;
-	if(fix_size < 2){
+	int fix_size = numItems / org->active_ctr;
+	if (fix_size < 2) {
 		cout << numItems << " " << org->active_ctr;
 	}
 	assert(fix_size >= 2);
@@ -254,15 +260,13 @@ void DEMain :: reshuffle(Individual* org, int size, int indpop, bool isInitial){
 						} else {
 							offspring_arr[itemInd] = clusInd;
 						}
-					}
-					else {
-						if(!ClusFull[clusInd]) {
+					} else {
+						if (!ClusFull[clusInd]) {
 							ClusFull[clusInd] = true;
 							numFullClusters++;
 						}
 					}
-				}
-				else {
+				} else {
 					clusters[clusInd]->push_back(itemInd);
 					ItemUsed[itemInd] = true;
 					if (isInitial) {
@@ -275,8 +279,8 @@ void DEMain :: reshuffle(Individual* org, int size, int indpop, bool isInitial){
 		}
 		ctr++;
 	}
-	delete [] ItemUsed;
-	delete [] ClusFull;
+	delete[] ItemUsed;
+	delete[] ClusFull;
 }
 
 /*
@@ -285,23 +289,23 @@ void DEMain :: reshuffle(Individual* org, int size, int indpop, bool isInitial){
  * This method calculates the fitness of a chromosome and returns it
  * return  type : double
  */
-double DEMain::calcFitness(Individual* org, int index, bool isInitial) {// not using index right now
+double DEMain::calcFitness(Individual* org, int index, bool isInitial) { // not using index right now
 	cout << "calcFitness method called" << endl;
 	double fit = 0.0;
 	double maxValue = 0.0;
 	double sum = 0.0;
 	double eps = 0.5;
 	//double* avgArr;
-int min_index = -1;	
-int str_size = numItems * kmax;
+	int min_index = -1;
+	int str_size = numItems * kmax;
 	double temp_dist;
 	//cout << str_size << endl;
 	//Dist_IC* knn = new Dist_IC [str_size];
 	int ctr = 0;
 	int vals = 0;
-	for(int i = 0; i < kmax; ++i) {
-			clusters[i]->clear();
-		}
+	for (int i = 0; i < kmax; ++i) {
+		clusters[i]->clear();
+	}
 	while (ctr < numItems && vals < str_size) { //form clusters
 		min_index = -1;
 		double min = numeric_limits<double>::max();
@@ -318,9 +322,9 @@ int str_size = numItems * kmax;
 
 				if (temp_dist < min) {
 //cout << "and current min = " << min << "current temp dist = " << temp_dist << endl;				
-	min = temp_dist;
+					min = temp_dist;
 					min_index = i;
-cout << min_index << " ; ";
+					cout << min_index << " ; ";
 				}
 				vals++;
 			}
@@ -330,67 +334,66 @@ cout << min_index << " ; ";
 //cout << endl;
 //cout << "outside loop min index " << min_index <<endl;
 		clusters[min_index]->push_back(ctr);
-		if(isInitial) {
+		if (isInitial) {
 			tracker[ctr][index] = min_index;
-		}
-		else {
+		} else {
 			offspring_arr[ctr] = min_index;
 		}
 		ctr++;
 
 	}
-/*double *arr;
-	ofstream outputFile;
-		outputFile.open("clusters.txt",ofstream::app);
-		outputFile << "------------------------------------" <<endl;
-		outputFile << "clusters obtained for individual i " << index << endl;
-	for (int k = 0; k < kmax; k++) {
-					if (org->active[k]) {
-						for (std::vector<int>::const_iterator j = clusters[k]->begin();j != clusters[k]->end(); ++j) {
-							arr = attr[*j]->items;
-							for (int m = 0; m < dim; m++) {
-								outputFile << arr[m] << " ";
-							}
-							outputFile << endl;
-						}
-						outputFile << "-----------------------------" << endl;
-					}
-				}
-	outputFile.close();*/
+	/*double *arr;
+	 ofstream outputFile;
+	 outputFile.open("clusters.txt",ofstream::app);
+	 outputFile << "------------------------------------" <<endl;
+	 outputFile << "clusters obtained for individual i " << index << endl;
+	 for (int k = 0; k < kmax; k++) {
+	 if (org->active[k]) {
+	 for (std::vector<int>::const_iterator j = clusters[k]->begin();j != clusters[k]->end(); ++j) {
+	 arr = attr[*j]->items;
+	 for (int m = 0; m < dim; m++) {
+	 outputFile << arr[m] << " ";
+	 }
+	 outputFile << endl;
+	 }
+	 outputFile << "-----------------------------" << endl;
+	 }
+	 }
+	 outputFile.close();*/
 	//check if each cluster is valid
 	for (int i = 0; i < kmax; i++) {
 		if (org->active[i]) {
-			cout << "size of cluster " << i << " is " << clusters[i]->size() << endl;
-}
-}
-   for (int i = 0; i < kmax; i++) {
-                if (org->active[i]) {
+			cout << "size of cluster " << i << " is " << clusters[i]->size()
+					<< endl;
+		}
+	}
+	for (int i = 0; i < kmax; i++) {
+		if (org->active[i]) {
 			if (clusters[i]->size() < 2) {
-				if(clusters[i]->size() == 0)
-				{
-				  org->active[i] = false;
-				org->active_ctr--;
+				if (clusters[i]->size() == 0) {
+					org->active[i] = false;
+					org->active_ctr--;
 				}
 				//reshuffle items in clusters
 //				qsort(knn, str_size, sizeof(Dist_IC), compare);
 				//for (int n=0; n<10; n++)
-				   // printf ("Sorted dist = %f item = %d  cluster_ind = %d \n",knn[n].distance, knn[n].itemIndex, knn[n].clustIndex);
+				// printf ("Sorted dist = %f item = %d  cluster_ind = %d \n",knn[n].distance, knn[n].itemIndex, knn[n].clustIndex);
 //				reshuffle(org, str_size, index, isInitial);
 				break;
 			}
 		}
 
 	}
-cout << endl;
+	cout << endl;
 	double avgArr[kmax];
 	for (int i = 0; i < kmax; i++) {
 		if (org->active[i]) {
-			sum =0.0;
+			sum = 0.0;
 //			for (std::vector<int>::const_iterator j = clusters[i]->begin(); j != clusters[i]->end(); ++j) {
-				//cout << *j << " ";
-for (vector<int>::size_type j = 0; j != clusters[i]->size(); j++){
+			//cout << *j << " ";
+			for (vector<int>::size_type j = 0; j != clusters[i]->size(); j++) {
 				int a = clusters[i]->at(j);
-sum += dist(attr[a]->items, org->clusCenter[i]);			
+				sum += dist(attr[a]->items, org->clusCenter[i]);
 //	sum += dist(attr[*j]->items, org->clusCenter[i]);
 			}
 			avgArr[i] = sqrt(sum / clusters[i]->size());
@@ -415,18 +418,28 @@ sum += dist(attr[a]->items, org->clusCenter[i]);
 		cout << "cluster number is 1, the value will be 0" << endl;
 	}
 	double avg = sum / org->active_ctr;
-	cout << "DB Index is " << avg;
-	if(minDB > avg){
+	//cout << "DB Index is " << avg;
+	if (minDB > avg) {
 		minDB = avg;
 	}
-	if(maxDB < avg){
+	if (maxDB < avg) {
 		maxDB = avg;
 	}
 	fit = 1 / (avg + eps);
-	cout << " and fitness is " << fit*1000 << endl;
+//	Cout << " and fitness is " << fit*100 << endl;
 	//delete [] knn;
 //delete [] arr;
-	return fit*1000;
+	trackFile.open("clusters.txt", ofstream::app);
+	if (isInitial) {
+		trackFile << " Initial pop index " << index << " ";
+	} else {
+		trackFile << " pop index " << index << " ";
+	}
+	trackFile << "with DB index " << avg << " and fitness " << fit * 100
+			<< endl;
+
+	trackFile.close();
+	return fit * 100;
 }
 
 /*
@@ -438,19 +451,19 @@ sum += dist(attr[a]->items, org->clusCenter[i]);
 void DEMain::selectSamples(int org, int *s1, int *s2, int *s3) {
 	if (s1) {
 		do {
-			*s1 = uniformInRange(0, pSize-1);
+			*s1 = uniformInRange(0, pSize - 1);
 		} while (*s1 == org);
 	}
 
 	if (s2) {
 		do {
-			*s2 = uniformInRange(0, pSize-1);
+			*s2 = uniformInRange(0, pSize - 1);
 		} while ((*s2 == org) || (*s2 == *s1));
 	}
 
 	if (s3) {
 		do {
-			*s3 = uniformInRange(0, pSize-1);
+			*s3 = uniformInRange(0, pSize - 1);
 		} while ((*s3 == org) || (*s3 == *s2) || (*s3 == *s1));
 	}
 	cout << "selectSamples called" << endl;
@@ -466,17 +479,18 @@ Individual* DEMain::crossover(int org, int gen) {
 	cout << "crossover method called" << endl;
 	int s1, s2, s3;
 	double cr_prob = probability * ((generations - gen) / generations);
-	double f_scale = scale * (1+uniform01());
+	double f_scale = scale * (1 + uniform01());
 	selectSamples(org, &s1, &s2, &s3);
 	Individual* child = new Individual(kmax, dim);
 	int counter = 0;
 	for (int j = 0; j < kmax; j++) {
-		if(uniform01() < cr_prob){
-			child->threshold[j] =  p->chromosome[s1]->threshold[j] +
-														f_scale*(p->chromosome[s2]->threshold[j] -  p->chromosome[s3]->threshold[j]);
-		}
-		else{
-			child->threshold[j] =  p->chromosome[org]->threshold[j];
+		if (uniform01() < cr_prob) {
+			child->threshold[j] = p->chromosome[s1]->threshold[j]
+					+ f_scale
+							* (p->chromosome[s2]->threshold[j]
+									- p->chromosome[s3]->threshold[j]);
+		} else {
+			child->threshold[j] = p->chromosome[org]->threshold[j];
 		}
 		//child->threshold[j] = uniform01();
 		for (int i = 0; i < dim; i++) {
@@ -484,14 +498,15 @@ Individual* DEMain::crossover(int org, int gen) {
 			assert(p->chromosome[org] != NULL);
 			if (uniform01() < cr_prob) {
 				child->clusCenter[j][i] = p->chromosome[s1]->clusCenter[j][i]
-									    + f_scale*(p->chromosome[s2]->clusCenter[j][i]- p->chromosome[s3]->clusCenter[j][i]);
+						+ f_scale
+								* (p->chromosome[s2]->clusCenter[j][i]
+										- p->chromosome[s3]->clusCenter[j][i]);
 
 				//cout << p->chromosome[s1]->clusCenter[j][i] << " " << p->chromosome[s2]->clusCenter[j][i] <<  " " << p->chromosome[s3]->clusCenter[j][i] << " " << child->clusCenter[j][i] << endl;
 			} else {
 				child->clusCenter[j][i] = p->chromosome[org]->clusCenter[j][i];
 
 			}
-
 
 		}
 		if (child->threshold[j] > 1 || child->threshold[j] < 0)
@@ -504,11 +519,11 @@ Individual* DEMain::crossover(int org, int gen) {
 	}
 	assert(counter <= kmax);
 	child->active_ctr = counter;
-	if(child->active_ctr < 2){
+	if (child->active_ctr < 2) {
 		int num = child->active_ctr;
 		while (num < 2) {
 			int i = uniformInRange(0, kmax - 1);
-			if(!child->active[i]){
+			if (!child->active[i]) {
 				child->threshold[i] = uniformInRange(0.5, 1.0);
 				child->active[i] = true;
 				child->active_ctr++;
@@ -527,58 +542,73 @@ void DEMain::run() {
 	cout << "run method called" << endl;
 	int i = 0;
 	bool * new_pop = new bool[pSize];
+	double fitness;
 	try {
-	while (i < generations) {
-		Population* newpop = new Population(kmax, dim);
-		for (int c = 0; c < pSize; c++) {
-			//cout << c << " iteration" << endl;
-			Individual *offspring;
-			offspring = crossover(c, i);
-			double fitness = calcFitness(offspring, c, false);
-			offspring->setFitness(fitness);
-			if (p->chromosome[c]->rawFitness <= offspring->rawFitness) {
-				new_pop[c] = true;
-				cout << "offspring added" << endl;
-				newpop->chromosome[c] = offspring;
-				for (int d = 0; d < numItems; d++) {
-					tracker[d][c] = offspring_arr[d]; //updating the parent chromosome replaced with new cluster centers of offspring
+		while (i < generations) {
+			Population* newpop = new Population(kmax, dim);
+			for (int c = 0; c < pSize; c++) {
+				//cout << c << " iteration" << endl;
+				Individual *offspring;
+				offspring = crossover(c, i);
+				fitness = calcFitness(offspring, c, false);
+				offspring->setFitness(fitness);
+				if (p->chromosome[c]->rawFitness <= offspring->rawFitness) {
+					new_pop[c] = true;
+					cout << "offspring added" << endl;
+					newpop->chromosome[c] = offspring;
+					for (int d = 0; d < numItems; d++) {
+						tracker[d][c] = offspring_arr[d]; //updating the parent chromosome replaced with new cluster centers of offspring
+					}
+				} else {
+					new_pop[c] = false;
+					cout << "offspring discarded" << endl;
+					delete offspring;
+					newpop->chromosome[c] = p->chromosome[c];
+					//delete [] offspring_arr;
 				}
-			} else {
-				new_pop[c] = false;
-				cout << "offspring discarded" << endl;
-				delete offspring;
-				newpop->chromosome[c] = p->chromosome[c];
-				//delete [] offspring_arr;
 			}
-		}
-		cout << "Generation " << i << " completed" << endl;
-		//assert(newpop != NULL);
-		for (int c = 0; c < pSize; c++) {
-			if (new_pop[c]) {
-				delete p->chromosome[c];
+			cout << "Generation " << i << " completed" << endl;
+			//assert(newpop != NULL);
+			for (int c = 0; c < pSize; c++) {
+				if (new_pop[c]) {
+					delete p->chromosome[c];
+				}
 			}
+			delete[] p->chromosome;
+			p = newpop;
+			int bestInd = 0;
+			fitness = p->chromosome[0]->rawFitness;
+			for (int k = 1; k < pSize; k++) {
+				if (fitness < p->chromosome[k]->rawFitness) {
+					bestInd = k;
+					fitness = p->chromosome[k]->rawFitness;
+				}
+			}
+			p->bestChromosomeIndex = bestInd;
+			trackFile.open("clusters.txt", ofstream::app);
+			trackFile << "Generation " << i << " finished" << endl;
+			trackFile << "Best chromosome index is " << bestInd
+					<< " and fitness is " << fitness << endl;
+			trackFile << "--------------------------------------" << endl;
+			trackFile.close();
+			i++;
 		}
-		delete [] p->chromosome;
-		p = newpop;
-		i++;
+		cout << endl;
+		cout << "Stopped at generation " << i << endl;
+		//find best chromosome
+		/*	int bestInd = 0;
+		 double fitness = p->chromosome[0]->rawFitness;
+		 for (int k = 1; k < pSize; k++) {
+		 if (fitness < p->chromosome[k]->rawFitness) {
+		 bestInd = k;
+		 fitness = p->chromosome[k]->rawFitness;
+		 }
+		 }*/
+		//assert(bestInd != -1);
+		report(p->bestChromosomeIndex);
+	} catch (exception& e) {
+		cerr << e.what() << endl;
 	}
-	cout << endl;
-	cout << "Stopped at generation " << i << endl;
-	//find best chromosome
-	int bestInd = 0;
-	double fitness = p->chromosome[0]->rawFitness;
-	for (int k = 1; k < pSize; k++) {
-		if (fitness < p->chromosome[k]->rawFitness) {
-			bestInd = k;
-			fitness = p->chromosome[k]->rawFitness;
-		}
-	}
-	//assert(bestInd != -1);
-	report(bestInd);
-	}
-	catch (exception& e) {
-	     cerr << e.what() << endl;
-	   }
 }
 
 /*
@@ -591,20 +621,20 @@ void DEMain::report(int index) {
 	outputFile.open("data_1000.txt");
 	outputFile << "The final clusters obtained are:" << endl;
 	int clus_index = -1;
-	for(int i = 0; i < kmax; ++i) {
-			clusters[i]->clear();
-		}
-cout << "Clusters are empty" <<endl;
+	for (int i = 0; i < kmax; ++i) {
+		clusters[i]->clear();
+	}
+	cout << "Clusters are empty" << endl;
 	Individual* org = p->chromosome[index];
-	for(int i = 0; i < numItems; i++){
+	for (int i = 0; i < numItems; i++) {
 		clus_index = tracker[i][index];
 		//assert(clus_index != -1);
-		if(org->active[clus_index]){
+		if (org->active[clus_index]) {
 			clusters[clus_index]->push_back(i);
 		}
 	}
 	//vector<int>* tempClust;
-cout<<"new clusters formed"<<endl;
+	cout << "new clusters formed" << endl;
 	double* arr;
 	int activeCount = 0;
 	for (int k = 0; k < kmax; k++) {
@@ -615,9 +645,9 @@ cout<<"new clusters formed"<<endl;
 			outputFile << "Elements of cluster : " << endl;
 
 //	for (std::vector<int>::const_iterator j = clusters[k]->begin();j != clusters[k]->end(); ++j) {
-for (vector<int>::size_type j = 0; j != clusters[k]->size(); j++){
+			for (vector<int>::size_type j = 0; j != clusters[k]->size(); j++) {
 				int a = clusters[k]->at(j);
-arr = attr[a]->items;				
+				arr = attr[a]->items;
 //arr = attr[*j]->items;
 				for (int m = 0; m < dim; m++) {
 					outputFile << arr[m] << " ";
@@ -627,47 +657,48 @@ arr = attr[a]->items;
 			}
 		}
 	}
-cout << "Finished printing" << endl;
-		for (int i = 0; i < kmax; ++i) {
-			clusters[i]->clear();
-		}
-		for(int i = 0; i < numItems; i++) {
-			int min_index = -1;
-			double min = numeric_limits<double>::max();
-			for (int j = 0; j < kmax; j++) {
-				if (org->active[j]) {
-					double temp_dist = dist(org->clusCenter[j], attr[i]->items);
-					if (temp_dist < min) {
-						min = temp_dist;
-						min_index = j;
-					}
+	cout << "Finished printing" << endl;
+	for (int i = 0; i < kmax; ++i) {
+		clusters[i]->clear();
+	}
+	for (int i = 0; i < numItems; i++) {
+		int min_index = -1;
+		double min = numeric_limits<double>::max();
+		for (int j = 0; j < kmax; j++) {
+			if (org->active[j]) {
+				double temp_dist = dist(org->clusCenter[j], attr[i]->items);
+				if (temp_dist < min) {
+					min = temp_dist;
+					min_index = j;
 				}
 			}
-			assert(min_index != -1);
-			clusters[min_index]->push_back(i);
 		}
-		for (int k = 0; k < kmax; k++) {
-				if (org->active[k]) {
-					outputFile << "------------------------------------------------------------" << endl;
-					outputFile << "Elements of cluster : " << k << endl;
-		//			for (std::vector<int>::const_iterator j = clusters[k]->begin();j != clusters[k]->end(); ++j) {
-for (vector<int>::size_type j = 0; j != clusters[k]->size(); j++){
-                                int a = clusters[k]->at(j);
+		assert(min_index != -1);
+		clusters[min_index]->push_back(i);
+	}
+	for (int k = 0; k < kmax; k++) {
+		if (org->active[k]) {
+			outputFile
+					<< "------------------------------------------------------------"
+					<< endl;
+			outputFile << "Elements of cluster : " << k << endl;
+			//			for (std::vector<int>::const_iterator j = clusters[k]->begin();j != clusters[k]->end(); ++j) {
+			for (vector<int>::size_type j = 0; j != clusters[k]->size(); j++) {
+				int a = clusters[k]->at(j);
 
-arr = attr[a]->items;				
+				arr = attr[a]->items;
 //arr = attr[*j]->items;
-						for (int m = 0; m < dim; m++) {
-							outputFile << arr[m] << " ";
-						}
-outputFile << attr[a]->typeClass;
-						outputFile << endl;
-					}
+				for (int m = 0; m < dim; m++) {
+					outputFile << arr[m] << " ";
 				}
+				outputFile << attr[a]->typeClass;
+				outputFile << endl;
 			}
-	outputFile << "Total number of clusters obtained : " << activeCount
-				<< endl;
+		}
+	}
+	outputFile << "Total number of clusters obtained : " << activeCount << endl;
 	outputFile << "Min DB is " << minDB << " Max DB is " << maxDB << endl;
 	outputFile.close();
 	cout << "Result saved in file.";
-delete [] arr;
+	delete[] arr;
 }
