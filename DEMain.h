@@ -30,12 +30,12 @@ public:
 	DEMain(int kmax, int dim, int gen, int** placeholder, Item** items, int itemSize);
 	virtual ~DEMain();
 	void setup(double min[],double max[]);
-	double calcFitness(Individual* org, int index, bool isInitial);
+	double calcFitness(Individual* org, int index, bool isInitial, int genNum);
 	double dist(double* x, double* y);
 	double* avgDist(Individual* org);
 	void selectSamples(int org, int *s1, int *s2, int *s3);
-	Individual* crossover(int org, int generation);
-	void run();
+	Individual* crossover(int org, int generation, double min[], double max[]);
+	void run(double min[], double max[]);
 	void report(int index);
 	void reshuffle(Individual* org, int size, int index,  bool isInitial);
 

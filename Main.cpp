@@ -14,6 +14,7 @@
 #include <cstdlib>
 #include <stdio.h>
 #include <limits>
+#include <ctime>
 
 using namespace std;
 
@@ -32,11 +33,12 @@ string exec(const char* cmd) {
 
 int main(){
 	const int kmax = 20;
-	const int gen = 100;
+	const int gen = 1000;
 	string ip_file, ip, lines, buffer, item;
 	int val, dim, counter = 0;
 	Item** objects;
 	int** track;
+	 srand(time(NULL));
 	cout << "Enter your file name";
 	//cin >> ip_file;
 	 ip_file = "glass.csv";
@@ -101,7 +103,7 @@ int main(){
 
 		DEMain obj(kmax, numFeatures, gen, track, objects, val);
 		obj.setup(min, max);
-		obj.run();
+		obj.run(min, max);
 	}
 }
 
