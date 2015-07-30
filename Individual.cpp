@@ -10,7 +10,7 @@
 
 Individual::Individual(int kmax, int dim) {
 	// TODO Auto-generated constructor stub
-	cout << "Individual class constructor called." << endl;
+//	cout << "Individual class constructor called." << endl;
 	rawFitness = 0.0;
 	valid = false;
 	k = kmax;

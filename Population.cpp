@@ -11,7 +11,7 @@
 
 
 Population::Population(int kmax, int dim){
-	cout << "Population class constructor called" << endl;
+//	cout << "Population class constructor called" << endl;
 	size = 10*dim;
 	chromosome = new Individual*[size];
 	bestChromosomeIndex = -1;

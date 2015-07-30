@@ -53,7 +53,7 @@ struct compare_first_only {
 
 ofstream trackFile;
 ofstream traceF;
-int changeCounter =0;
+//int changeCounter =0;
 double minDB = std::numeric_limits<double>::max();
 double maxDB= std::numeric_limits<double>::min();
 int compare(const void *p1, const void *p2){
@@ -71,7 +71,7 @@ int compare(const void *p1, const void *p2){
 DEMain::DEMain(int kmax, int dim, int gen, int** placeholder, Item** items,
 	       int itemSize) {
   // TODO Auto-generated constructor stub
-  cout << "Constructor called from DEMain class" << endl;
+  //cout << "Constructor called from DEMain class" << endl;
   p = new Population(kmax, dim);
   strategy = stRand1Bin;
   generations = gen;
@@ -98,8 +98,8 @@ DEMain::~DEMain() {
   //	cout << "DEMAIN destructor" << endl;
   delete p;
   for (int i = 0; i < numItems; i++){
-    delete tracker[i];
-    delete attr[i];
+    delete [] tracker[i];
+    delete [] attr[i];
   }
   for(int i = 0; i < kmax; ++i) {
     delete clusters[i];
@@ -119,7 +119,7 @@ DEMain::~DEMain() {
  */
 void DEMain::setup(double min[], double max[]) {
   //initialize chromosomes for the first time
-  cout<< "Setup method called" <<endl;
+ // cout<< "Setup method called" <<endl;
 
   for (int i = 0; i < pSize; i++) {
     bool isValid = false;
@@ -239,7 +239,7 @@ double DEMain::dist(double* x, double* y) {
  * return type : void
  */
 void DEMain :: reshuffle(Individual* org, int size, int indpop, bool isInitial){//need to think
-  cout << "reshuffle method called" <<endl;
+//  cout << "reshuffle method called" <<endl;
   for(int i = 0; i < kmax; ++i) {
     clusters[i]->clear();
   }
@@ -298,7 +298,7 @@ void DEMain :: reshuffle(Individual* org, int size, int indpop, bool isInitial){
  * return  type : double
  */
 double DEMain::calcFitness(Individual* org, int index, bool isInitial, int genNum) {// not using index right now
-  cout << "calcFitness method called" << endl;
+ // cout << "calcFitness method called" << endl;
   double fit = 0.0;
   double maxValue = 0.0;
   double sum = 0.0;
@@ -433,12 +433,6 @@ double DEMain::calcFitness(Individual* org, int index, bool isInitial, int genNu
     }
     fit = (1 / avg);// + eps);
     trackFile.open("clusters.txt", ofstream::app);
-    if(isInitial){
-      // trackFile << " Initial pop index " << index << " ";
-    }
-    else {
-      // trackFile << " pop index " << index << " ";
-    }
     trackFile << setiosflags(ios::left) ;
     trackFile << setw(5) << genNum << setw(12) << fit*100 << setw(5) << org->active_ctr << setw(5) <<tempC ;
     for(int i = 0; i < kmax; i++) {
@@ -447,8 +441,6 @@ double DEMain::calcFitness(Individual* org, int index, bool isInitial, int genNu
     trackFile << setw(5) << "|" ;
     for(int i = 0; i <tempC; i++){trackFile << setw(5) <<  tempArr[i] ;}
     trackFile << setw(5) << index << endl;
-    // trackFile << "with DB index " << avg << " and fitness " << fit*100 << endl;
-
     trackFile.close();
 
     return fit*100;
@@ -484,7 +476,7 @@ void DEMain::selectSamples(int org, int *s1, int *s2, int *s3) {
       *s3 = uniformInRange(0, pSize-1);
     } while ((*s3 == org) || (*s3 == *s2) || (*s3 == *s1));
   }
-  cout << "selectSamples called" << endl;
+ // cout << "selectSamples called" << endl;
   return;
 }
 
@@ -494,10 +486,10 @@ void DEMain::selectSamples(int org, int *s1, int *s2, int *s3) {
  * returns pointer to offspring created
  */
 Individual* DEMain::crossover(int org, int gen, double min[], double max[]) {
-  cout << "crossover method called" << endl;
+  //cout << "crossover method called" << endl;
   int s1, s2, s3;
   double cr_prob = probability * ((generations - gen) / generations);
-  scale = 0.1;  //temporary change
+//  scale = 0.1;  //temporary change
   double f_scale = scale * (1+uniform01());
   selectSamples(org, &s1, &s2, &s3);
   Individual* child = new Individual(kmax, dim);
@@ -510,10 +502,8 @@ Individual* DEMain::crossover(int org, int gen, double min[], double max[]) {
     else{
       child->threshold[j] =  p->chromosome[org]->threshold[j];
     }
-    //child->threshold[j] = uniform01();
     bool change = uniform01() < cr_prob? true : false;
     for (int i = 0; i < dim; i++) {
-      //cout << "crossover::"  << org << endl;
       assert(p->chromosome[org] != NULL);
       if (change) {
 	child->clusCenter[j][i] = p->chromosome[s1]->clusCenter[j][i]
@@ -526,7 +516,7 @@ Individual* DEMain::crossover(int org, int gen, double min[], double max[]) {
       }
 
       if ((child->clusCenter[j][i] < min[i]) || (child->clusCenter[j][i] > max[i])){
-	changeCounter++;
+	child->clusCenter[j][i] = uniformInRange(min[i], max[i]);
       }
     }//for i
     if (child->threshold[j] > 1 || child->threshold[j] < 0)
@@ -551,7 +541,7 @@ Individual* DEMain::crossover(int org, int gen, double min[], double max[]) {
       }
     }
   }
-  //	traceF << "For generation " << gen << endl;
+ 
   traceF << "Parent index : " << org << " s1, s2, s3 index " << s1 << " " << s2 << " " << s3 <<endl;
   return child;
 
@@ -561,7 +551,7 @@ Individual* DEMain::crossover(int org, int gen, double min[], double max[]) {
  * This method runs the DE algorithm
  */
 void DEMain::run(double min[], double max[]) {
-  cout << "run method called" << endl;
+ // cout << "run method called" << endl;
   int i = 0;
   bool * new_pop = new bool[pSize];
   double fitness;
@@ -578,23 +568,25 @@ void DEMain::run(double min[], double max[]) {
 	fitness = calcFitness(offspring, c, false, i);
 	offspring->setFitness(fitness);
 	if (p->chromosome[c]->rawFitness <= offspring->rawFitness) {
+	  traceF << endl;
 	  traceF << "Parent replaced" << endl;
 	  new_pop[c] = true;
-	  cout << "offspring added" << endl;
+//	  cout << "offspring added" << endl;
 	  newpop->chromosome[c] = offspring;
 	  for (int d = 0; d < numItems; d++) {
 	    tracker[d][c] = offspring_arr[d]; //updating the parent chromosome replaced with new cluster centers of offspring
 	  }
 	} else {
+	  traceF << endl;
 	  traceF << "Parent not replaced" << endl;
 	  new_pop[c] = false;
-	  cout << "offspring discarded" << endl;
+//	  cout << "offspring discarded" << endl;
 	  delete offspring;
 	  newpop->chromosome[c] = p->chromosome[c];
 	  //delete [] offspring_arr;
 	}
       }
-      cout << "Generation " << i << " completed" << endl;
+     // cout << "Generation " << i << " completed" << endl;
       //assert(newpop != NULL);
       for (int c = 0; c < pSize; c++) {
 	if (new_pop[c]) {
@@ -717,6 +709,5 @@ void DEMain::report(int index) {
   outputFile << "Min DB is " << minDB << " Max DB is " << maxDB << endl;
   outputFile.close();
   cout << "Result saved in file.";
-  cout << "Number of times feautres went out of bound " << changeCounter<< endl;
   delete [] arr;
 }
