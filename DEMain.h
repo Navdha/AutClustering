@@ -37,7 +37,7 @@ public:
 	Individual* crossover(int org, int generation, double min[], double max[]);
 	void run(double min[], double max[]);
 	void report(int index);
-	void reshuffle(Individual* org, int size, int index,  bool isInitial);
+	void reshuffle(Individual* org, int size, int index,  bool isInitial, int initialActive);
 	void calcDistBtwnItems();
 
 	Population* p;

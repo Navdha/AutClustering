@@ -42,7 +42,7 @@ int main(){
 	 srand(time(NULL));
 	cout << "Enter your file name";
 	//cin >> ip_file;
-	 ip_file = "wine.csv";
+	 ip_file = "glass.csv";
 	ip = "wc -l " + ip_file; // find the number of lines in csv file that determines the number of items to cluster.
 //	cout << ip << endl;
 //	system("wc -l wine.csv");
@@ -57,8 +57,8 @@ int main(){
 		dim = atoi(lines.c_str());
 	}
 	cout << val << endl;
-	//int numFeatures = dim -1; for glass
-	int numFeatures = dim;
+	int numFeatures = dim -1;
+	//int numFeatures = dim;
 	if(val > 0){
 		int col = 10*(numFeatures);//rename to popSize
 		double min [numFeatures];
@@ -78,7 +78,7 @@ int main(){
 				istringstream in(buffer);
 				objects[counter] = new Item(numFeatures);
 				getline(in, item, ',');
-				objects[counter]->typeClass = atoi(item.c_str());
+				//objects[counter]->typeClass = atoi(item.c_str());
 				for(int i = 0; i < numFeatures; i++)
 				     {
 						getline(in, item, ',');
@@ -93,8 +93,8 @@ int main(){
 							max[i] = value;
 						}
 				     }
-			//	getline(in, item, ',');
-			//	objects[counter]->typeClass = atoi(item.c_str());
+				getline(in, item, ',');
+				objects[counter]->typeClass = atoi(item.c_str());
 				//cout << endl;
 				counter++;
 			}

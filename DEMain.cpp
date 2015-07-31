@@ -255,7 +255,7 @@ double DEMain::dist(double* x, double* y) {
  * This method reshuffles items equally into different active cluster centers of an individual
  * return type : void
  */
-void DEMain :: reshuffle(Individual* org, int size, int indpop, bool isInitial){//need to think
+void DEMain :: reshuffle(Individual* org, int size, int indpop, bool isInitial, int initialActive){//need to think
 //  cout << "reshuffle method called" <<endl;
   for(int i = 0; i < kmax; ++i) {
     clusters[i]->clear();
@@ -269,10 +269,13 @@ void DEMain :: reshuffle(Individual* org, int size, int indpop, bool isInitial){
   int numFullClusters = 0;
   bool* ItemUsed = new bool[numItems]();
   bool* ClusFull = new bool[kmax]();
+  int* ItemCounter = new int[numItems];
+  for(int i = 0; i < numItems; i++) ItemCounter[i] = 0;
   while (ctr < size) { //check for total # of items
     int itemInd = knn[ctr].itemIndex;
     int clusInd = knn[ctr].clustIndex;
     if (!ItemUsed[itemInd]) {
+	ItemCounter[itemInd]++;
       if (org->active[clusInd]) {
 	if (numFullClusters != org->active_ctr) {
 	  if (clusters[clusInd]->size() < fix_size) {
@@ -288,6 +291,11 @@ void DEMain :: reshuffle(Individual* org, int size, int indpop, bool isInitial){
 	    if(!ClusFull[clusInd]) {
 	      ClusFull[clusInd] = true;
 	      numFullClusters++;
+		if(ItemCounter[itemInd] == initialActive){
+		    clusters[clusInd]->push_back(itemInd);
+		    ItemUsed[itemInd] = true;
+		    cout << "Item index affected " << itemInd << endl;
+		}
 	    }
 	  }
 	}
@@ -303,7 +311,29 @@ void DEMain :: reshuffle(Individual* org, int size, int indpop, bool isInitial){
       }
     }
     ctr++;
+  }//end while
+  int totalCount = 0;
+  for(int i = 0; i < kmax; i++){
+  if(org->active[i]){
+   totalCount += clusters[i]->size();
   }
+  }
+cout << "knn size " << size << endl;
+  cout << totalCount << endl;
+int notUsed;
+for(int i = 0 ; i < numItems; i++){
+if(!ItemUsed[i]){
+notUsed = i; 
+cout << "Item index not used yet " <<i << endl;
+} 
+}
+for(int i = 0; i < size; i++) {
+if(notUsed == knn[i].itemIndex) { cout << "Index of item not used in knn array " << i << endl;
+}
+}
+cout << "Number of active cluster centers initially " << initialActive << endl;
+cout << "Number of times an item is encountered in knn " << ItemCounter[notUsed] << endl; 
+  assert(totalCount == numItems);
   delete [] ItemUsed;
   delete [] ClusFull;
 }
@@ -321,14 +351,16 @@ double DEMain::calcFitness(Individual* org, int index, bool isInitial, int genNu
   double sum = 0.0;
   //	double eps = 0.5;
   int min_index = -1;	
-  int str_size = numItems * kmax;
+//  int str_size = numItems * org->active_ctr;
+  //cout << "value of str_size " << str_size << endl;
   double temp_dist;
   int ctr = 0;
   int vals = 0;
   for(int i = 0; i < kmax; ++i) {
     clusters[i]->clear();
   }
-  while (ctr < numItems && vals < str_size) { //form clusters
+ int initialActive = org->active_ctr;
+  while (ctr < numItems) { //form clusters
     min_index = -1;
     double min = numeric_limits<double>::max();
     for (int i = 0; i < kmax; i++) {
@@ -346,6 +378,9 @@ double DEMain::calcFitness(Individual* org, int index, bool isInitial, int genNu
       }
 
     }
+   // cout << "# of active clusters before reshuffle after knn  " << org->active_ctr << endl;
+  //  cout << "value of vals " << vals << endl;
+//    assert(str_size == vals); 
     assert(min_index != -1);
     clusters[min_index]->push_back(ctr);
     if(isInitial) {
@@ -356,7 +391,8 @@ double DEMain::calcFitness(Individual* org, int index, bool isInitial, int genNu
     }
     ctr++;
 
-  }
+  }// end while
+ cout << "value of vals " << vals << endl;
   //	trackFile.open("clusters.txt", ofstream::app);
   //	trackFile << "Number of clusters and size " << endl;
   //	trackFile << org->active_ctr << " " ;
@@ -406,8 +442,8 @@ double DEMain::calcFitness(Individual* org, int index, bool isInitial, int genNu
 	  org->active_ctr--;
 	} else {
 	  //reshuffle items in clusters
-	  qsort(knn, str_size, sizeof(Dist_IC), compare);
-	  reshuffle(org, str_size, index, isInitial);
+	  qsort(knn, vals, sizeof(Dist_IC), compare);
+	  reshuffle(org, vals, index, isInitial, initialActive);
 	  break;
 	}//random if-else end
       }//size if
@@ -428,7 +464,7 @@ double DEMain::calcFitness(Individual* org, int index, bool isInitial, int genNu
       }//end if
 		
     }//end outer for
-	
+    sum = 0.0;	
     for (int i = 0; i < kmax; i++) {
       maxValue = 0.0;
       for (int j = 0; j < kmax; j++) {
