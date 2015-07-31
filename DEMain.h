@@ -27,7 +27,7 @@ public:
 //typedef double (*compfn)(const void*, const void*);
 class DEMain {
 public:
-	DEMain(int kmax, int dim, int gen, int** placeholder, Item** items, int itemSize);
+	DEMain(int kmax, int dim, int gen, int** placeholder, Item** items, int itemSize, bool calcDB);
 	virtual ~DEMain();
 	void setup(double min[],double max[]);
 	double calcFitness(Individual* org, int index, bool isInitial, int genNum);
@@ -38,7 +38,7 @@ public:
 	void run(double min[], double max[]);
 	void report(int index);
 	void reshuffle(Individual* org, int size, int index,  bool isInitial);
-
+	void calcDistBtwnItems();
 
 	Population* p;
 	int strategy;
@@ -54,7 +54,8 @@ public:
 	vector<int>** clusters;
 	Dist_IC* knn;
 	int* offspring_arr;
-
+	double** distItem;
+	bool isDB;
 private:
 	void Rand1Bin(int candIndex);
 };

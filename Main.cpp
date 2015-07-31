@@ -34,6 +34,7 @@ string exec(const char* cmd) {
 int main(){
 	const int kmax = 20;
 	const int gen = 1000;
+	const bool isDB = true;
 	string ip_file, ip, lines, buffer, item;
 	int val, dim, counter = 0;
 	Item** objects;
@@ -41,9 +42,12 @@ int main(){
 	 srand(time(NULL));
 	cout << "Enter your file name";
 	//cin >> ip_file;
-	 ip_file = "glass.csv";
+	 ip_file = "wine.csv";
 	ip = "wc -l " + ip_file; // find the number of lines in csv file that determines the number of items to cluster.
+//	cout << ip << endl;
+//	system("wc -l wine.csv");
 	lines = exec(ip.c_str());
+//	cout << lines << endl;
 	if(!lines.empty()){
 		val = atoi(lines.c_str());
 	}
@@ -52,7 +56,9 @@ int main(){
 	if(!lines.empty()){
 		dim = atoi(lines.c_str());
 	}
-	int numFeatures = dim -1;
+	cout << val << endl;
+	//int numFeatures = dim -1; for glass
+	int numFeatures = dim;
 	if(val > 0){
 		int col = 10*(numFeatures);//rename to popSize
 		double min [numFeatures];
@@ -72,6 +78,7 @@ int main(){
 				istringstream in(buffer);
 				objects[counter] = new Item(numFeatures);
 				getline(in, item, ',');
+				objects[counter]->typeClass = atoi(item.c_str());
 				for(int i = 0; i < numFeatures; i++)
 				     {
 						getline(in, item, ',');
@@ -86,8 +93,8 @@ int main(){
 							max[i] = value;
 						}
 				     }
-				getline(in, item, ',');
-				objects[counter]->typeClass = atoi(item.c_str());
+			//	getline(in, item, ',');
+			//	objects[counter]->typeClass = atoi(item.c_str());
 				//cout << endl;
 				counter++;
 			}
@@ -101,7 +108,7 @@ int main(){
 		cout << max[i] << " ";
 		}
 
-		DEMain obj(kmax, numFeatures, gen, track, objects, val);
+		DEMain obj(kmax, numFeatures, gen, track, objects, val, isDB);
 		obj.setup(min, max);
 		obj.run(min, max);
 	}

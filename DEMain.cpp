@@ -69,7 +69,7 @@ int compare(const void *p1, const void *p2){
 
 
 DEMain::DEMain(int kmax, int dim, int gen, int** placeholder, Item** items,
-	       int itemSize) {
+	       int itemSize, bool calcDB) {
   // TODO Auto-generated constructor stub
   //cout << "Constructor called from DEMain class" << endl;
   p = new Population(kmax, dim);
@@ -84,6 +84,8 @@ DEMain::DEMain(int kmax, int dim, int gen, int** placeholder, Item** items,
   tracker = placeholder;
   attr = items;
   clusters = new vector<int>*[kmax];
+  isDB = calcDB;
+  distItem = new double*[numItems];
   offspring_arr = new int[numItems];
   for (int count = 0; count < kmax; count++)
     {
@@ -100,15 +102,30 @@ DEMain::~DEMain() {
   for (int i = 0; i < numItems; i++){
     delete [] tracker[i];
     delete [] attr[i];
+    delete [] distItem[i];
   }
   for(int i = 0; i < kmax; ++i) {
     delete clusters[i];
   }
   delete[] tracker;
   delete[] attr;
+  delete[] distItem;
   delete [] clusters;
   delete [] offspring_arr;
   delete [] knn;
+}
+
+/*
+ * This method calculates and stores the distance between all items
+ * Used to calculate CS index
+ */
+void DEMain::calcDistBtwnItems(){
+     for (int i = 0; i < numItems; i++) {
+	distItem[i] = new double[numItems - i];
+	for (int j = i + 1; j < numItems; j++) {
+	  distItem[i][j - i - 1] = dist(attr[i]->items, attr[j]->items);
+	}//end j for
+   }// end i for
 }
 
 /* This method takes an input two arrays min and max
@@ -396,8 +413,9 @@ double DEMain::calcFitness(Individual* org, int index, bool isInitial, int genNu
       }//size if
     }//active if
   }//end for
-
+  double avg = 0.0;
   if(org->active_ctr > 1) {
+  if(isDB) {   
     double avgArr[kmax];
     for (int i = 0; i < kmax; i++) {
       if (org->active[i]) {
@@ -432,6 +450,67 @@ double DEMain::calcFitness(Individual* org, int index, bool isInitial, int genNu
       maxDB = avg;
     }
     fit = (1 / avg);// + eps);
+  }//end isDB if
+  else {
+  calcDistBtwnItems();
+  double** newClustCenters = new double*[kmax];
+  double finalIntraSum = 0.0;
+  double finalInterSum = 0.0;
+  double csVal = 0.0;
+  for(int i = 0; i < kmax; i++){
+	double sumArr[dim];
+	double maxIntraDist = numeric_limits<double>::min();
+	double intraClusSum = 0.0;
+	double tempIntraDist;
+	fill_n(sumArr, dim, 0);
+	if(org->active[i]){
+	   for (vector<int>::size_type j = 0; j != clusters[i]->size(); j++) {
+		int a = clusters[i]->at(j);
+		double* tempItem = attr[a]->items;
+		for(int k = 0; k < dim; k++){
+		    sumArr[k] += tempItem[k];
+		}
+		for(vector<int>::size_type k = 0; k != clusters[i]->size(); k++) {
+		    if (k != j) {
+			int b = clusters[i]->at(k);
+			if (b < a) {
+			    tempIntraDist = distItem[b][a - (b + 1)];
+			} else {
+			    tempIntraDist = distItem[a][b - (a + 1)];
+			}
+			if (tempIntraDist > maxIntraDist) {
+			    maxIntraDist = tempIntraDist;
+			}
+		    }
+		}//end for k
+		intraClusSum += maxIntraDist;
+	}// end for j
+	finalIntraSum += (intraClusSum / clusters[i]->size());
+	newClustCenters[i] = new double[dim];
+	for(int m = 0; m < dim; m++){
+	    newClustCenters[i][m] = sumArr[m]/clusters[i]->size(); //finding new centroids
+	}
+  }//endif
+ }// end for i
+  double interClusSum;
+  for (int i = 0; i < kmax; i++) {
+	double minInterDist = numeric_limits<double>::max();
+	interClusSum = 0.0;
+	double tempInterDist;
+	for (int j = 0; j < kmax; j++) {
+	     if (i != j && org->active[i] && org->active[j]) {
+		tempInterDist = dist(newClustCenters[i], newClustCenters[j]);
+		if (tempInterDist < minInterDist){
+		    tempInterDist = minInterDist;
+		}
+	     }//end outer if
+	}//end for j
+	interClusSum += tempInterDist;
+   }//end for i
+   finalInterSum += interClusSum;
+   csVal = finalIntraSum/finalInterSum;
+   fit = 1/csVal;
+  }//end else
     trackFile.open("clusters.txt", ofstream::app);
     trackFile << setiosflags(ios::left) ;
     trackFile << setw(5) << genNum << setw(12) << fit*100 << setw(5) << org->active_ctr << setw(5) <<tempC ;
