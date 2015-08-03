@@ -491,7 +491,7 @@ double DEMain::calcFitness(Individual* org, int index, bool isInitial, int genNu
   double finalInterSum = 0.0;
   double csVal = 0.0;
   for(int i = 0; i < kmax; i++){
-	double sumArr[dim];
+	double* sumArr = new double[dim];
 	double intraClusSum = 0.0;
 	double tempIntraDist;
 	fill_n(sumArr, dim, 0);
