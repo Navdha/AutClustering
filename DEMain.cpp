@@ -120,9 +120,9 @@ DEMain::~DEMain() {
  * Used to calculate CS index
  */
 void DEMain::calcDistBtwnItems(){
-     for (int i = 0; i < numItems; i++) {
-	distItem[i] = new double[numItems - i];
-	for (int j = i + 1; j < numItems; j++) {
+     for (int i = 0; i < numItems -1; i++) {
+	distItem[i] = new double[numItems- 1 - i];
+	for (int j = i + 1; j < numItems ; j++) {
 	  distItem[i][j - i - 1] = dist(attr[i]->items, attr[j]->items);
 	}//end j for
    }// end i for
@@ -452,8 +452,8 @@ double DEMain::calcFitness(Individual* org, int index, bool isInitial, int genNu
 	sum =0.0;
 	for (vector<int>::size_type j = 0; j != clusters[i]->size(); j++){
 	  int a = clusters[i]->at(j);
-	  // sum += dist(attr[a]->items, org->clusCenter[i]);
-	  sum += dist(attr[a]->items, newClustCenters[i]);			
+	   sum += dist(attr[a]->items, org->clusCenter[i]);
+	  // sum += dist(attr[a]->items, newClustCenters[i]);			
 	}//end for
 	avgArr[i] = sqrt(sum / clusters[i]->size()); //finding the intra cluster distance for all active clusters
       }//end if
@@ -465,8 +465,8 @@ double DEMain::calcFitness(Individual* org, int index, bool isInitial, int genNu
       for (int j = 0; j < kmax; j++) {
 	if (i != j && org->active[i] && org->active[j]) {
 	  double temp = avgArr[i] + avgArr[j];
-	  // temp /= dist(org->clusCenter[i], org->clusCenter[j]); //finding R =(S_i+S_j)/d_i,j
-	 temp /= dist(newClustCenters[i], newClustCenters[j]);
+	   temp /= dist(org->clusCenter[i], org->clusCenter[j]); //finding R =(S_i+S_j)/d_i,j
+	  //	 temp /= dist(newClustCenters[i], newClustCenters[j]);
 	  if (temp > maxValue)
 	    maxValue = temp;
 	}
@@ -790,7 +790,7 @@ void DEMain::report(int index, int worstInd) {
 
   org = p->chromosome[worstInd];
   for(int i = 0; i < numItems; i++){
-    clus_index = tracker[i][index];
+    clus_index = tracker[i][worstInd];
     if(org->active[clus_index]){
       clusters[clus_index]->push_back(i);
     }
