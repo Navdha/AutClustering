@@ -36,8 +36,8 @@ public:
 	void selectSamples(int org, int *s1, int *s2, int *s3);
 	Individual* crossover(int org, int generation, double min[], double max[]);
 	void run(double min[], double max[]);
-	void report(int index);
-	void reshuffle(Individual* org, int size, int index,  bool isInitial, int initialActive);
+	void report(int index, int worstInd);
+	void reshuffle(Individual* org, int size, int index,  bool isInitial);
 	void calcDistBtwnItems();
 
 	Population* p;
