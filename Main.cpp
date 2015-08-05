@@ -34,7 +34,7 @@ string exec(const char* cmd) {
 int main(){
 	const int kmax = 20;
 	const int gen = 1000;
-	const bool isDB = true;
+	const int isDB = 2; //enum implementation 1 : DB, 2 : CS, 3: PB
 	string ip_file, ip, lines, buffer, item;
 	int val, dim, counter = 0;
 	Item** objects;
@@ -42,7 +42,7 @@ int main(){
 	 srand(time(NULL));
 	cout << "Enter your file name";
 	//cin >> ip_file;
-	 ip_file = "glass.csv";
+	 ip_file = "iris.csv";
 	ip = "wc -l " + ip_file; // find the number of lines in csv file that determines the number of items to cluster.
 //	cout << ip << endl;
 //	system("wc -l wine.csv");
@@ -57,8 +57,8 @@ int main(){
 		dim = atoi(lines.c_str());
 	}
 	cout << val << endl;
-	int numFeatures = dim -1;
-	//int numFeatures = dim;
+	//	int numFeatures = dim -1;
+	int numFeatures = dim;
 	if(val > 0){
 		int col = 10*(numFeatures);//rename to popSize
 		double min [numFeatures];
@@ -77,8 +77,8 @@ int main(){
 			{
 				istringstream in(buffer);
 				objects[counter] = new Item(numFeatures);
-				getline(in, item, ',');
-				//objects[counter]->typeClass = atoi(item.c_str());
+				//	getline(in, item, ',');
+				//	objects[counter]->typeClass = atoi(item.c_str());
 				for(int i = 0; i < numFeatures; i++)
 				     {
 						getline(in, item, ',');

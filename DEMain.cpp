@@ -16,6 +16,7 @@
 #include <functional> // needed for bind
 //#include <utility>
 #include <algorithm>
+#include <iterator>
 #include <stdexcept>
 
 using namespace std;
@@ -69,7 +70,7 @@ int compare(const void *p1, const void *p2){
 
 
 DEMain::DEMain(int kmax, int dim, int gen, int** placeholder, Item** items,
-	       int itemSize, bool calcDB) {
+	       int itemSize, int calcVal) {
   // TODO Auto-generated constructor stub
   //cout << "Constructor called from DEMain class" << endl;
   p = new Population(kmax, dim);
@@ -84,7 +85,7 @@ DEMain::DEMain(int kmax, int dim, int gen, int** placeholder, Item** items,
   tracker = placeholder;
   attr = items;
   clusters = new vector<int>*[kmax];
-  isDB = calcDB;
+  indexForFit = calcVal;
   distItem = new double*[numItems];
   offspring_arr = new int[numItems];
   for (int count = 0; count < kmax; count++)
@@ -126,6 +127,7 @@ void DEMain::calcDistBtwnItems(){
 	  distItem[i][j - i - 1] = dist(attr[i]->items, attr[j]->items);
 	}//end j for
    }// end i for
+
 }
 
 /* This method takes an input two arrays min and max
@@ -317,6 +319,197 @@ void DEMain :: reshuffle(Individual* org, int size, int indpop, bool isInitial){
 }
 
 /*
+ * calculate and return DB index
+ * Parameters : Individual
+ */
+double DEMain::calcDBIndex(Individual* org){
+	 double* avgArr = new double[kmax];
+	 double sum;
+	    for (int i = 0; i < kmax; i++) {
+	      if (org->active[i]) {
+		sum =0.0;
+		for (vector<int>::size_type j = 0; j != clusters[i]->size(); j++){
+		  int a = clusters[i]->at(j);
+		   sum += dist(attr[a]->items, org->clusCenter[i]);
+		  // sum += dist(attr[a]->items, newClustCenters[i]);
+		}//end for
+		avgArr[i] = sqrt(sum / clusters[i]->size()); //finding the intra cluster distance for all active clusters
+	      }//end if
+
+	    }//end outer for
+	    sum = 0.0;
+	    for (int i = 0; i < kmax; i++) {
+	      double maxValue = 0.0;
+	      for (int j = 0; j < kmax; j++) {
+		if (i != j && org->active[i] && org->active[j]) {
+		  double temp = avgArr[i] + avgArr[j];
+		   temp /= dist(org->clusCenter[i], org->clusCenter[j]); //finding R =(S_i+S_j)/d_i,j
+		  //	 temp /= dist(newClustCenters[i], newClustCenters[j]);
+		  if (temp > maxValue)
+		    maxValue = temp;
+		}
+	      }
+	      sum += maxValue;//finding sum(Rmax)
+	    }
+	    double avg = sum / org->active_ctr;
+	    //cout << "DB Index is " << avg;
+	    if(minDB > avg){
+	      minDB = avg;
+	    }
+	    if(maxDB < avg){
+	      maxDB = avg;
+	    }
+	   return avg;
+	    delete [] avgArr;
+}
+
+/*
+ * calculate and return CS index for an organism
+ * Parameters : Individual
+ */
+double DEMain::calcCSIndex(Individual* org){
+	 calcDistBtwnItems();
+	  double** newClustCenters = new double*[kmax];
+	  double finalIntraSum = 0.0;
+	  double finalInterSum = 0.0;
+	  double csVal = 0.0;
+	  for(int i = 0; i < kmax; i++){
+		double* sumArr = new double[dim];
+		double intraClusSum = 0.0;
+		double tempIntraDist;
+		fill_n(sumArr, dim, 0);
+		if(org->active[i]){
+		   for (vector<int>::size_type j = 0; j != clusters[i]->size(); j++) {
+			int a = clusters[i]->at(j);
+			double maxIntraDist = numeric_limits<double>::min();
+			double* tempItem = attr[a]->items;
+			for(int k = 0; k < dim; k++){
+			    sumArr[k] += tempItem[k];
+			}
+			for(vector<int>::size_type k = 0; k != clusters[i]->size(); k++) {
+			    if (k != j) {
+				int b = clusters[i]->at(k);
+				if (b < a) {
+				    tempIntraDist = distItem[b][a - (b + 1)];
+				} else {
+				    tempIntraDist = distItem[a][b - (a + 1)];
+				}
+				if (tempIntraDist > maxIntraDist) {
+				    maxIntraDist = tempIntraDist;
+				}
+			    }
+			}//end for k
+			intraClusSum += maxIntraDist; //finding intra cluster distance
+		}// end for j
+		finalIntraSum += (intraClusSum / clusters[i]->size());
+		newClustCenters[i] = new double[dim];
+		for(int m = 0; m < dim; m++){
+		    newClustCenters[i][m] = sumArr[m]/clusters[i]->size(); //finding new centroids
+		}
+	  }//endif
+	 }// end for i
+	  double interClusSum = 0.0;
+	  double tempInterDist;
+	  for (int i = 0; i < kmax; i++) {
+		double minInterDist = numeric_limits<double>::max();
+		if(org->active[i]){
+		for (int j = 0; j < kmax; j++) {
+		     if (i != j && org->active[j]) {
+			tempInterDist = dist(newClustCenters[i], newClustCenters[j]);
+			if (tempInterDist < minInterDist){
+			    minInterDist = tempInterDist;
+			}
+		     }//end outer if
+		}//end for j
+		interClusSum += minInterDist; //finding minimum distance between clusters
+		}
+	 }//end for i
+	   finalInterSum = interClusSum;
+	   csVal = finalIntraSum/finalInterSum;
+	   return csVal;
+}
+
+double DEMain::calcSD(){
+	double sum = 0.0;
+	int counter = 0;
+	for (int i = 0; i < numItems - 1; i++) {
+		distItem[i] = new double[numItems- 1 - i];
+		for (int j = i + 1; j < numItems ; j++) {
+			distItem[i][j - i - 1] = dist(attr[i]->items, attr[j]->items);
+			sum += distItem[i][j - i - 1];
+			counter++;
+		} //end j for
+	} // end i for
+	int num = numItems*(numItems - 1)/2;
+	assert(counter == num);
+	double mean = sum/counter;
+	double sumSD = 0.0;
+	for(int i = 0; i < numItems - 1; i++){
+		for (int j = i + 1; j < numItems ; j++) {
+			sumSD += pow((distItem[i][j - i - 1] - mean), 2.0);
+		}
+	}
+	double SD = sqrt(sumSD/counter);
+	return SD;
+}
+
+/*calculates and returns the Point biserial distance
+ * Parameter : Individual
+ */
+double DEMain::calcPBIndex(Individual* org) {
+	double sd = calcSD();
+	//calculate average intra group distance
+	double t = numItems * (numItems - 1) / 2;
+	double pbIndex;
+	int countIntraGroup = 0; // this is w_d
+	int countInterGroup = 0; //this is b_d
+	double intraClusAvgDist = 0.0;
+	double interClusAvgDist = 0.0;
+	for (int i = 0; i < kmax; i++) {
+		if(org->active[i]){
+			double sumIntraCluster = 0.0;
+			double sumInterCluster = 0.0;
+			int n = clusters[i]->size();
+			countIntraGroup += (n * (n - 1)) / 2;
+			countInterGroup += (n * (org->active_ctr - n)) / 2;
+
+			for (vector<int>::size_type j = 0; j != clusters[i]->size(); j++) {
+				int a = clusters[i]->at(j);
+				for (int l = 0; l < numItems; l++) {
+					if (!(find(clusters[i]->begin(), clusters[i]->end(), l)!= clusters[i]->end())) {
+						if (l < a) {
+							sumInterCluster += distItem[l][a - (l + 1)];
+						} else{
+							sumInterCluster += distItem[a][l - (a + 1)];
+						}
+					}
+				}// end for l
+				for (vector<int>::size_type k = 0; k != clusters[i]->size();
+						k++) {
+					if (k != j) {
+						int b = clusters[i]->at(k);
+						if (b < a) {
+							sumIntraCluster += distItem[b][a - (b + 1)];
+						} else {
+							sumIntraCluster += distItem[a][b - (a + 1)];
+						}
+
+					}
+				} //end for k
+			}//end for j
+			intraClusAvgDist += sumIntraCluster/clusters[i]->size(); //value of d_w
+			interClusAvgDist += sumInterCluster/(numItems - clusters[i]->size()); //value of d_b
+		}//end if
+	}//end for i
+	double totalSums = (interClusAvgDist - intraClusAvgDist);
+	double t_val = t * t;
+	double sqrtVal = sqrt((countIntraGroup * countInterGroup) / t_val);
+	pbIndex = totalSums * sqrtVal / sd;
+	//Point biserial : (d_b*d_w)(sqrt(w_d*b_d/t^2))/sd
+	return pbIndex;
+}
+
+/*
  * Input parameters : Pointer to chromosome, index of population's chromosome,
  * bool parameter to know whether function called during initial setup or during DE
  * This method calculates the fitness of a chromosome and returns it
@@ -424,127 +617,41 @@ double DEMain::calcFitness(Individual* org, int index, bool isInitial, int genNu
   }//end for
   double avg = 0.0;
   if(org->active_ctr > 1) {
-  if(isDB) {   
+  if(indexForFit == 1) {
 	 // to calculate DB index
-    double** newClustCenters = new double*[kmax];
-    for (int i = 0; i < kmax; i++) {
-      double* sumArr = new double[dim];
-      fill_n(sumArr, dim, 0);
-      if (org->active[i]) {
-	for (vector<int>::size_type j = 0; j != clusters[i]->size();
-	     j++) {
-	  int a = clusters[i]->at(j);
-	  double* tempItem = attr[a]->items;
-	  for (int k = 0; k < dim; k++) {
-	    sumArr[k] += tempItem[k];
-	  }
-	}
+   /* double** newClustCenters = new double*[kmax];
+			for (int i = 0; i < kmax; i++) {
+				double* sumArr = new double[dim];
+				fill_n(sumArr, dim, 0);
+				if (org->active[i]) {
+					for (vector<int>::size_type j = 0; j != clusters[i]->size();
+							j++) {
+						int a = clusters[i]->at(j);
+						double* tempItem = attr[a]->items;
+						for (int k = 0; k < dim; k++) {
+							sumArr[k] += tempItem[k];
+						}
+					}
 
-	newClustCenters[i] = new double[dim];
-	for(int m = 0; m < dim; m++){
-	  newClustCenters[i][m] = sumArr[m]/clusters[i]->size(); //finding new centroids
-	}
-      }
-    }
-    double avgArr[kmax];
-    for (int i = 0; i < kmax; i++) {
-      if (org->active[i]) {
-	sum =0.0;
-	for (vector<int>::size_type j = 0; j != clusters[i]->size(); j++){
-	  int a = clusters[i]->at(j);
-	   sum += dist(attr[a]->items, org->clusCenter[i]);
-	  // sum += dist(attr[a]->items, newClustCenters[i]);			
-	}//end for
-	avgArr[i] = sqrt(sum / clusters[i]->size()); //finding the intra cluster distance for all active clusters
-      }//end if
-		
-    }//end outer for
-    sum = 0.0;	
-    for (int i = 0; i < kmax; i++) {
-      maxValue = 0.0;
-      for (int j = 0; j < kmax; j++) {
-	if (i != j && org->active[i] && org->active[j]) {
-	  double temp = avgArr[i] + avgArr[j];
-	   temp /= dist(org->clusCenter[i], org->clusCenter[j]); //finding R =(S_i+S_j)/d_i,j
-	  //	 temp /= dist(newClustCenters[i], newClustCenters[j]);
-	  if (temp > maxValue)
-	    maxValue = temp;
-	}
-      }
-      sum += maxValue;//finding sum(Rmax)
-    }
-    double avg = sum / org->active_ctr;
-    //cout << "DB Index is " << avg;
-    if(minDB > avg){
-      minDB = avg;
-    }
-    if(maxDB < avg){
-      maxDB = avg;
-    }
-    fit = (1 / avg);// + eps);
+					newClustCenters[i] = new double[dim];
+					for (int m = 0; m < dim; m++) {
+						newClustCenters[i][m] = sumArr[m] / clusters[i]->size(); //finding new centroids
+					}
+				}
+			}*/
+	  double dBValue = calcDBIndex(org);
+	  fit = 1/dBValue;
+
   }//end isDB if
-  else {
+  else if (indexForFit == 2){
 	  //calculate CS index
-  calcDistBtwnItems();
-  double** newClustCenters = new double*[kmax];
-  double finalIntraSum = 0.0;
-  double finalInterSum = 0.0;
-  double csVal = 0.0;
-  for(int i = 0; i < kmax; i++){
-	double* sumArr = new double[dim];
-	double intraClusSum = 0.0;
-	double tempIntraDist;
-	fill_n(sumArr, dim, 0);
-	if(org->active[i]){
-	   for (vector<int>::size_type j = 0; j != clusters[i]->size(); j++) {
-		int a = clusters[i]->at(j);
-		double maxIntraDist = numeric_limits<double>::min();
-		double* tempItem = attr[a]->items;
-		for(int k = 0; k < dim; k++){
-		    sumArr[k] += tempItem[k];
-		}
-		for(vector<int>::size_type k = 0; k != clusters[i]->size(); k++) {
-		    if (k != j) {
-			int b = clusters[i]->at(k);
-			if (b < a) {
-			    tempIntraDist = distItem[b][a - (b + 1)];
-			} else {
-			    tempIntraDist = distItem[a][b - (a + 1)];
-			}
-			if (tempIntraDist > maxIntraDist) {
-			    maxIntraDist = tempIntraDist;
-			}
-		    }
-		}//end for k
-		intraClusSum += maxIntraDist; //finding intra cluster distance
-	}// end for j
-	finalIntraSum += (intraClusSum / clusters[i]->size());
-	newClustCenters[i] = new double[dim];
-	for(int m = 0; m < dim; m++){
-	    newClustCenters[i][m] = sumArr[m]/clusters[i]->size(); //finding new centroids
-	}
-  }//endif
- }// end for i
-  double interClusSum = 0.0;
-  double tempInterDist;
-  for (int i = 0; i < kmax; i++) {
-	double minInterDist = numeric_limits<double>::max();
-	if(org->active[i]){
-	for (int j = 0; j < kmax; j++) {
-	     if (i != j && org->active[j]) {
-		tempInterDist = dist(newClustCenters[i], newClustCenters[j]);
-		if (tempInterDist < minInterDist){
-		    minInterDist = tempInterDist;
-		}
-	     }//end outer if
-	}//end for j
-	interClusSum += minInterDist; //finding minimum distance between clusters
-	}  
- }//end for i
-   finalInterSum = interClusSum;
-   csVal = finalIntraSum/finalInterSum;
+   double csVal = calcCSIndex(org);
    fit = 1/csVal;
   }//end else
+  else{
+	  double pbVal = calcPBIndex(org);
+	  fit = pbVal;
+  }
    trackFile.open("clusters.txt", ofstream::app);
     trackFile << setiosflags(ios::left) ;
     trackFile << setw(5) << genNum << setw(12) << fit*100 << setw(5) << org->active_ctr << setw(5) <<tempC ;
@@ -852,7 +959,7 @@ void DEMain::report(int index, int worstInd) {
 	}
   outputFile << "Total number of clusters obtained : " << activeCount
 	     << endl;
-  outputFile << "Min DB is " << minDB << " Max DB is " << maxDB << endl;
+  // outputFile << "Min DB is " << minDB << " Max DB is " << maxDB << endl;
   outputFile.close();
   cout << "Result saved in file.";
   delete [] arr;
