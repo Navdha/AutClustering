@@ -426,7 +426,15 @@ double DEMain::calcCSIndex(Individual* org){
 	 }//end for i
 	   finalInterSum = interClusSum;
 	   csVal = finalIntraSum/finalInterSum;
+	   if(minDB > csVal){
+	      minDB = csVal;
+	    }
+	    if(maxDB < csVal){
+	      maxDB = csVal;
+	    }
+	  
 	   return csVal;
+       
 }
 
 double DEMain::calcSD(){
@@ -506,6 +514,13 @@ double DEMain::calcPBIndex(Individual* org) {
 	double sqrtVal = sqrt((countIntraGroup * countInterGroup) / t_val);
 	pbIndex = totalSums * sqrtVal / sd;
 	//Point biserial : (d_b*d_w)(sqrt(w_d*b_d/t^2))/sd
+	if(minDB > pbIndex){
+	      minDB = pbIndex;
+	    }
+	    if(maxDB < pbIndex){
+	      maxDB = pbIndex;
+	    }
+	 
 	return pbIndex;
 }
 
