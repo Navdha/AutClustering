@@ -34,15 +34,15 @@ string exec(const char* cmd) {
 int main(){
 	const int kmax = 20;
 	const int gen = 1000;
-	const int isDB = 2; //enum implementation 1 : DB, 2 : CS, 3: PB
+	const int isDB = 1; //enum implementation 1 : DB, 2 : CS, 3: PB
 	string ip_file, ip, lines, buffer, item;
 	int val, dim, counter = 0;
 	Item** objects;
 	int** track;
 	 srand(time(NULL));
 	cout << "Enter your file name";
-	//cin >> ip_file;
-	 ip_file = "iris.csv";
+	cin >> ip_file;
+	//	 ip_file = "iris.csv";
 	ip = "wc -l " + ip_file; // find the number of lines in csv file that determines the number of items to cluster.
 //	cout << ip << endl;
 //	system("wc -l wine.csv");
@@ -110,6 +110,7 @@ int main(){
 
 		DEMain obj(kmax, numFeatures, gen, track, objects, val, isDB);
 		obj.setup(min, max);
+		obj.calcDistBtwnItems();
 		obj.run(min, max);
 	}
 }

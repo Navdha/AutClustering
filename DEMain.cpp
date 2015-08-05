@@ -87,6 +87,9 @@ DEMain::DEMain(int kmax, int dim, int gen, int** placeholder, Item** items,
   clusters = new vector<int>*[kmax];
   indexForFit = calcVal;
   distItem = new double*[numItems];
+  for (int i = 0; i < numItems -1; i++) {
+    distItem[i] = new double[numItems- 1 - i];
+  } 
   offspring_arr = new int[numItems];
   for (int count = 0; count < kmax; count++)
     {
@@ -122,7 +125,7 @@ DEMain::~DEMain() {
  */
 void DEMain::calcDistBtwnItems(){
      for (int i = 0; i < numItems -1; i++) {
-	distItem[i] = new double[numItems- 1 - i];
+       //	distItem[i] = new double[numItems- 1 - i];
 	for (int j = i + 1; j < numItems ; j++) {
 	  distItem[i][j - i - 1] = dist(attr[i]->items, attr[j]->items);
 	}//end j for
@@ -368,7 +371,7 @@ double DEMain::calcDBIndex(Individual* org){
  * Parameters : Individual
  */
 double DEMain::calcCSIndex(Individual* org){
-	 calcDistBtwnItems();
+	
 	  double** newClustCenters = new double*[kmax];
 	  double finalIntraSum = 0.0;
 	  double finalInterSum = 0.0;
@@ -974,7 +977,7 @@ void DEMain::report(int index, int worstInd) {
 	}
   outputFile << "Total number of clusters obtained : " << activeCount
 	     << endl;
-  // outputFile << "Min DB is " << minDB << " Max DB is " << maxDB << endl;
+   outputFile << "Min index is " << minDB << " Max index is " << maxDB << endl;
   outputFile.close();
   cout << "Result saved in file.";
   delete [] arr;
