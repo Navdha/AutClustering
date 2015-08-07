@@ -34,10 +34,10 @@ public:
 	double calcFitness(Individual* org, int index, bool isInitial, int genNum);
 	double dist(double* x, double* y);
 	double* avgDist(Individual* org);
-	void selectSamples(int org, int *s1, int *s2, int *s3);
+	void selectSamples(int org, int &s1, int &s2, int &s3);
 	Individual* crossover(int org, int generation, double min[], double max[]);
-	void run(double min[], double max[]);
-	void report(int index, int worstInd);
+	void run(double min[], double max[], string filename);
+	void report(int index, int worstInd, string filename);
 	void reshuffle(Individual* org, int size, int index,  bool isInitial);
 	void calcDistBtwnItems();
 	double calcDBIndex(Individual* org);

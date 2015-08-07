@@ -11,7 +11,7 @@
 #include <iostream>
 #include <sstream>
 #include <fstream>
-#include <string>
+#include <string.h>
 #include <cstdlib>
 #include <stdio.h>
 #include <limits>
@@ -33,18 +33,15 @@ string exec(const char* cmd) {
 }
 
 int main(int argc, char** argv){
-	//const int kmax = 20;
-	//const int gen = 1000;
-	const int isDB = 1; //enum implementation 1 : DB, 2 : CS, 3: PB
 	string ip_file, ip, lines, buffer, item;
 	int val, dim, counter = 0;
 	Item** objects;
 	int** track;
 	srand(time(NULL));
 	//cin >> ip_file;
-	 if (argc != 9){
+	 if (argc != 10){
 	    cerr << "Usage: " << argv[0]
-	         << " filename CrMax CrMin scaleFactor thresholdVal kmax kmin numGenerations"
+	         << " filename CrMax CrMin scaleFactor thresholdVal kmax kmin numGenerations validityIndex"
 	         << endl;
 	    exit(1);
 	  }
@@ -56,7 +53,22 @@ int main(int argc, char** argv){
 	int kmax = atoi(argv[6]);
 	int kmin = atoi(argv[7]);
 	int gen = atoi(argv[8]);
+	int validityIndex = atoi(argv[9]);
 
+	char* filename = argv[1];
+	for (int i = 2; i < argc-1; i++) {
+		strcat(filename, "_");
+		strcat(filename, argv[i]);
+	}
+	if (validityIndex == 1) {
+		strcat(filename, "_DB");
+	} else if (validityIndex == 2) {
+		strcat(filename, "_CS");
+	} else {
+		strcat(filename, "_PB");
+	}
+	strcat(filename, ".txt");
+	string resultFileName(filename);
 
 	ip = "wc -l " + ip_file; // find the number of lines in csv file that determines the number of items to cluster.
 	lines = exec(ip.c_str());
@@ -119,10 +131,10 @@ int main(int argc, char** argv){
 
 		Parameters param(CrMaximum, CrMinimum, FScaleProb, threshVal, kmax, kmin, gen);
 
-		DEMain obj(numFeatures, track, objects, val, isDB, param);
-		obj.setup(min, max);
+		DEMain obj(numFeatures, track, objects, val, validityIndex, param);
 		obj.calcDistBtwnItems();
-		obj.run(min, max);
+		obj.setup(min, max);
+		obj.run(min, max, resultFileName);
 	}
 }
 
