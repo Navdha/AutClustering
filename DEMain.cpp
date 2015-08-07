@@ -6,6 +6,7 @@
  */
 
 #include "DEMain.h"
+#include "Parameters.h"
 #include <iomanip>
 #include <iostream>
 #include <fstream>
@@ -57,6 +58,11 @@ ofstream traceF;
 //int changeCounter =0;
 double minDB = std::numeric_limits<double>::max();
 double maxDB= std::numeric_limits<double>::min();
+double minCS = std::numeric_limits<double>::max();
+double maxCS= std::numeric_limits<double>::min();
+double minPB = std::numeric_limits<double>::max();
+double maxPB= std::numeric_limits<double>::min();
+
 int compare(const void *p1, const void *p2){
   Dist_IC *elem1 = (Dist_IC *)p1;
   Dist_IC *elem2 = (Dist_IC *)p2;
@@ -69,34 +75,45 @@ int compare(const void *p1, const void *p2){
 }
 
 
-DEMain::DEMain(int kmax, int dim, int gen, int** placeholder, Item** items,
-	       int itemSize, int calcVal) {
+DEMain::DEMain(int dim, int** placeholder, Item** items, int itemSize, int validityIndex, Parameters param) {
   // TODO Auto-generated constructor stub
   //cout << "Constructor called from DEMain class" << endl;
-  p = new Population(kmax, dim);
+  p = new Population(param.kmax, dim);
   strategy = stRand1Bin;
-  generations = gen;
-  probability = 0.5;
-  scale = 0.5;
+  generations = param.gen;
+  probability = param.CrMax - param.CrMin;
+  scale = param.FScale;
   pSize = dim * 10;
-  this->kmax = kmax;
+  kmax = param.kmax;
   this->dim = dim;
   numItems = itemSize;
-  tracker = placeholder;
-  attr = items;
-  clusters = new vector<int>*[kmax];
-  indexForFit = calcVal;
-  distItem = new double*[numItems];
+  kmin = param.kmin;
+  thresholdVal = param.threshold;
+  indexForFit = validityIndex;
+  attr = items; //data structure to hold all items
+
+  //scratch space
+  tracker = placeholder; //holds cluster indexes corresponding to every item and pop member(calcFitness and report)
+  clusters = new vector<int>*[kmax]; //holds actual clusters for every pop members(calcFitness)
+  distItem = new double*[numItems]; //jagged array storing dist between all items(used for calcCSIndex and calcPBIndex)
   for (int i = 0; i < numItems -1; i++) {
     distItem[i] = new double[numItems- 1 - i];
   } 
-  offspring_arr = new int[numItems];
-  for (int count = 0; count < kmax; count++)
-    {
-      clusters[count] = new vector<int>;
-    }
+  offspring_arr = new int[numItems];//column that replaces worse parent's column from tracker(calcFitness)
   int size = kmax*numItems;
-  knn = new Dist_IC[size];
+  knn = new Dist_IC[size];//used for reshuffling(reshuffle & calcFitness)
+  ItemUsed = new bool[numItems](); //used in reshuffle
+  ClusFull = new bool[kmax](); //used in reshuffle
+  avgArr = new double[kmax];//used in calcDB
+  sumArr = new double[dim];// used in calcCS
+  ItemCounter = new int[numItems]; //used in reshuffle
+  newClustCenters = new double*[kmax];//used in calcCS
+  new_pop = new bool[pSize];
+  for (int count = 0; count < kmax; count++)
+      {
+        clusters[count] = new vector<int>;
+        newClustCenters[count] = new double[dim];
+      }
 }
 
 DEMain::~DEMain() {
@@ -110,26 +127,33 @@ DEMain::~DEMain() {
   }
   for(int i = 0; i < kmax; ++i) {
     delete clusters[i];
+    delete newClustCenters[i];
   }
-  delete[] tracker;
-  delete[] attr;
-  delete[] distItem;
+  delete [] tracker;
+  delete [] attr;
+  delete [] distItem;
   delete [] clusters;
   delete [] offspring_arr;
   delete [] knn;
+  delete [] ItemUsed;
+  delete [] ClusFull;
+  delete [] avgArr;
+  delete [] sumArr;
+  delete [] ItemCounter;
+  delete [] new_pop;
+  delete [] newClustCenters;
 }
 
 /*
  * This method calculates and stores the distance between all items
  * Used to calculate CS index
  */
-void DEMain::calcDistBtwnItems(){
-     for (int i = 0; i < numItems -1; i++) {
-       //	distItem[i] = new double[numItems- 1 - i];
-	for (int j = i + 1; j < numItems ; j++) {
-	  distItem[i][j - i - 1] = dist(attr[i]->items, attr[j]->items);
-	}//end j for
-   }// end i for
+void DEMain::calcDistBtwnItems() {
+	for (int i = 0; i < numItems - 1; i++) {
+		for (int j = i + 1; j < numItems; j++) {
+			distItem[i][j - i - 1] = dist(attr[i]->items, attr[j]->items);
+		}  //end j for
+	}  // end i for
 
 }
 
@@ -140,61 +164,58 @@ void DEMain::calcDistBtwnItems(){
  * no output expected
  */
 void DEMain::setup(double min[], double max[]) {
-  //initialize chromosomes for the first time
- // cout<< "Setup method called" <<endl;
-
-  for (int i = 0; i < pSize; i++) {
-    bool isValid = false;
-    double fitn = 0.0;
-    Individual* temp = new Individual(kmax, dim);
-    while(!isValid) {
-      int ctr_act = 0;
-      for (int j = 0; j < kmax; j++) {
-	temp->threshold[j] = uniform01();
-	//	cout << temp->threshold[j];
-	if (temp->threshold[j] > 0.5) {
-	  temp->active[j] = true;
-	  ctr_act++;
-	} else
-	  temp->active[j] = false;
-	for (int k = 0; k < dim; k++) {
-	  temp->clusCenter[j][k] = uniformInRange(min[k], max[k]);
-	  //cout << temp->clusCenter[j][k] << " ";
+	//initialize chromosomes for the first time
+	// cout<< "Setup method called" <<endl;
+	for (int i = 0; i < pSize; i++) {
+		bool isValid = false;
+		double fitn = 0.0;
+		Individual* temp = new Individual(kmax, dim);
+		while (!isValid) {
+			int ctr_act = 0;
+			for (int j = 0; j < kmax; j++) {
+				temp->threshold[j] = uniform01();
+				if (temp->threshold[j] > thresholdVal) {
+					temp->active[j] = true;
+					ctr_act++;
+				} else
+					temp->active[j] = false;
+				for (int k = 0; k < dim; k++) {
+					temp->clusCenter[j][k] = uniformInRange(min[k], max[k]);
+				}
+			}
+			assert(ctr_act <= kmax);
+			temp->active_ctr = ctr_act;
+			//code to check kmin = 2
+			if (temp->active_ctr < kmin) {
+				int num = temp->active_ctr;
+				while (num < kmin) {
+					int i = uniformInRange(0, kmax - 1);
+					if (!temp->active[i]) {
+						temp->threshold[i] = uniformInRange(thresholdVal, 1.0);
+						temp->active[i] = true;
+						temp->active_ctr++;
+						num++;
+					}
+				}
+			}
+			fitn = calcFitness(temp, i, true, -1);
+			if (fitn != -1) {
+				isValid = true;
+			}
+		} //end while
+		assert(fitn != 0.0);
+		temp->setFitness(fitn);
+		p->chromosome[i] = temp;
 	}
-      }
-      assert(ctr_act <= kmax);
-      temp->active_ctr = ctr_act;
-      //code to check kmin = 2
-      if(temp->active_ctr < 2){
-	int num = temp->active_ctr;
-	while (num < 2) {
-	  int i = uniformInRange(0, kmax - 1);
-	  if(!temp->active[i]){
-	    temp->threshold[i] = uniformInRange(0.5, 1.0);
-	    temp->active[i] = true;
-	    temp->active_ctr++;
-	    num++;
-	  }
+	int bestInd = 0;
+	double fitness = p->chromosome[0]->rawFitness;
+	for (int k = 1; k < pSize; k++) {
+		if (fitness < p->chromosome[k]->rawFitness) {
+			bestInd = k;
+			fitness = p->chromosome[k]->rawFitness;
+		}
 	}
-      }
-      fitn = calcFitness(temp, i, true, -1);
-      if( fitn != -1){
-	isValid = true;
-      }
-    } //end while
-    assert(fitn != 0.0);
-    temp->setFitness(fitn);
-    p->chromosome[i] = temp;
-  }
-  int bestInd = 0;
-  double fitness = p->chromosome[0]->rawFitness;
-  for (int k = 1; k < pSize; k++) {
-    if (fitness < p->chromosome[k]->rawFitness) {
-      bestInd = k;
-      fitness = p->chromosome[k]->rawFitness;
-    }
-  }
-  p->bestChromosomeIndex = bestInd;
+	p->bestChromosomeIndex = bestInd;
 
 }
 
@@ -210,49 +231,10 @@ double DEMain::dist(double* x, double* y) {
   double distance = 0.0;
   for (int i = 0; i < dim; i++) {
     Sum = Sum + pow((x[i] - y[i]), 2.0);
-    //		distance = sqrt(Sum);
   }
   distance = sqrt(Sum);
   return distance;
 }
-
-/*double* DEMain::avgDist(Individual* org) {
-  cout << "avgDist function called" << endl;
-  double* temp = new double[kmax];
-  //double *tempArr = &temp;
-  double* d2;
-  vector<int>* c = new vector<int>;
-  //int ind = -1;
-  for (int i = 0; i < kmax; i++) {
-  if (org->active[i]) {
-  double sum = 0.0;
-  delete [] d2;
-  d2 = org->clusCenter[i];
-  //			delete [] c;
-  c = org->clusters[i];
-  //for(vector<int>::iterator it = c[i]->begin(); it != c[i]->end(); ++it) {
-  //for (vector<int>::size_type j = 0; j != size; j++) {
-  for (std::vector<int>::const_iterator j = c->begin(); j != c->end();
-  ++j) {
-  sum += dist(attr[*j]->items, d2);
-  }
-  temp[i] = sum / (c->size());
-  }
-  }
-
-  return temp;
-  }*/
-
-/*int DEMain :: compare(const void *p1, const void *p2) {
-  Dist_IC *elem1 = (Dist_IC *)p1;
-  Dist_IC *elem2 = (Dist_IC *)p2;
-  if(elem1->distance < elem2->distance)
-  return -1;
-  else if(elem1->distance > elem2->distance)
-  return 1;
-  else
-  return 0;
-  }*/
 
 /*
  * Input parameters : A pointer to a chromosome, struct array that holds distance corresponding
@@ -260,110 +242,105 @@ double DEMain::dist(double* x, double* y) {
  * This method reshuffles items equally into different active cluster centers of an individual
  * return type : void
  */
-void DEMain :: reshuffle(Individual* org, int size, int indpop, bool isInitial){//need to think
+void DEMain::reshuffle(Individual* org, int size, int indpop, bool isInitial) { //need to think
 //  cout << "reshuffle method called" <<endl;
-  for(int i = 0; i < kmax; ++i) {
-    clusters[i]->clear();
-  }
-  int fix_size = numItems/org->active_ctr;
-  if(fix_size < 2){
-    cout << numItems << " " << org->active_ctr;
-  }
-  assert(fix_size >= 2);
-  int ctr = 0;
-  int numFullClusters = 0;
-  bool* ItemUsed = new bool[numItems]();
-  bool* ClusFull = new bool[kmax]();
-  int* ItemCounter = new int[numItems];
-  for(int i = 0; i < numItems; i++) ItemCounter[i] = 0;
-  while (ctr < size) { //check for total # of items
-    int itemInd = knn[ctr].itemIndex;
-    int clusInd = knn[ctr].clustIndex;
-    if (!ItemUsed[itemInd]) {
-      if (org->active[clusInd]) {
-	ItemCounter[itemInd]++;
-	if (numFullClusters != org->active_ctr) {
-	  if (clusters[clusInd]->size() < fix_size) {
-	    clusters[clusInd]->push_back(itemInd);
-	    ItemUsed[itemInd] = true;
-	    if (isInitial) {
-	      tracker[itemInd][indpop] = clusInd;
-	    } else {
-	      offspring_arr[itemInd] = clusInd;
-	    }
-	  }
-	  else {
-	    if(ItemCounter[itemInd] == org->active_ctr){
-	      clusters[clusInd]->push_back(itemInd);
-	      ItemUsed[itemInd] = true;
-		    // cout << "Item index affected " << itemInd << endl;
-	    }
-	    if(!ClusFull[clusInd]) {
-	      ClusFull[clusInd] = true;
-	      numFullClusters++;	
-	    }
-	  }
+	for (int i = 0; i < kmax; ++i) {
+		clusters[i]->clear();
 	}
-	else {
-	  clusters[clusInd]->push_back(itemInd);
-	  ItemUsed[itemInd] = true;
-	  if (isInitial) {
-	    tracker[itemInd][indpop] = clusInd;
-	  } else {
-	    offspring_arr[itemInd] = clusInd;
-	  }
+	int fix_size = numItems / org->active_ctr;
+	if (fix_size < 2) {
+		cout << numItems << " " << org->active_ctr;
 	}
-      }
-    }
-    ctr++;
-  }//end while
-  delete [] ItemUsed;
-  delete [] ClusFull;
+	assert(fix_size >= 2);
+	int ctr = 0;
+	int numFullClusters = 0;
+
+	for (int i = 0; i < numItems; i++)
+		ItemCounter[i] = 0;
+	fill_n(ItemUsed, numItems, false);
+	fill_n(ClusFull, kmax, false);
+	while (ctr < size) { //check for total # of items
+		int itemInd = knn[ctr].itemIndex;
+		int clusInd = knn[ctr].clustIndex;
+		if (!ItemUsed[itemInd]) {
+			if (org->active[clusInd]) {
+				ItemCounter[itemInd]++;
+				if (numFullClusters != org->active_ctr) {
+					if (clusters[clusInd]->size() < fix_size) {
+						clusters[clusInd]->push_back(itemInd);
+						ItemUsed[itemInd] = true;
+						if (isInitial) {
+							tracker[itemInd][indpop] = clusInd;
+						} else {
+							offspring_arr[itemInd] = clusInd;
+						}
+					} else {
+						if (ItemCounter[itemInd] == org->active_ctr) {
+							clusters[clusInd]->push_back(itemInd);
+							ItemUsed[itemInd] = true;
+						}
+						if (!ClusFull[clusInd]) {
+							ClusFull[clusInd] = true;
+							numFullClusters++;
+						}
+					}
+				} else {
+					clusters[clusInd]->push_back(itemInd);
+					ItemUsed[itemInd] = true;
+					if (isInitial) {
+						tracker[itemInd][indpop] = clusInd;
+					} else {
+						offspring_arr[itemInd] = clusInd;
+					}
+				}
+			}
+		}
+		ctr++;
+	} //end while
+
 }
 
 /*
  * calculate and return DB index
  * Parameters : Individual
  */
-double DEMain::calcDBIndex(Individual* org){
-	 double* avgArr = new double[kmax];
-	 double sum;
-	    for (int i = 0; i < kmax; i++) {
-	      if (org->active[i]) {
-		sum =0.0;
-		for (vector<int>::size_type j = 0; j != clusters[i]->size(); j++){
-		  int a = clusters[i]->at(j);
-		   sum += dist(attr[a]->items, org->clusCenter[i]);
-		  // sum += dist(attr[a]->items, newClustCenters[i]);
-		}//end for
-		avgArr[i] = sqrt(sum / clusters[i]->size()); //finding the intra cluster distance for all active clusters
-	      }//end if
+double DEMain::calcDBIndex(Individual* org) {
+	fill_n(avgArr, kmax, 0.0);
+	double sum;
+	for (int i = 0; i < kmax; i++) {
+		if (org->active[i]) {
+			sum = 0.0;
+			for (vector<int>::size_type j = 0; j != clusters[i]->size(); j++) {
+				int a = clusters[i]->at(j);
+				sum += dist(attr[a]->items, org->clusCenter[i]);
+				// sum += dist(attr[a]->items, newClustCenters[i]);
+			} //end for
+			avgArr[i] = sqrt(sum / clusters[i]->size()); //finding the intra cluster distance for all active clusters
+		} //end if
 
-	    }//end outer for
-	    sum = 0.0;
-	    for (int i = 0; i < kmax; i++) {
-	      double maxValue = 0.0;
-	      for (int j = 0; j < kmax; j++) {
-		if (i != j && org->active[i] && org->active[j]) {
-		  double temp = avgArr[i] + avgArr[j];
-		   temp /= dist(org->clusCenter[i], org->clusCenter[j]); //finding R =(S_i+S_j)/d_i,j
-		  //	 temp /= dist(newClustCenters[i], newClustCenters[j]);
-		  if (temp > maxValue)
-		    maxValue = temp;
+	} //end outer for
+	sum = 0.0;
+	for (int i = 0; i < kmax; i++) {
+		double maxValue = 0.0;
+		for (int j = 0; j < kmax; j++) {
+			if (i != j && org->active[i] && org->active[j]) {
+				double temp = avgArr[i] + avgArr[j];
+				temp /= dist(org->clusCenter[i], org->clusCenter[j]); //finding R =(S_i+S_j)/d_i,j
+				//	 temp /= dist(newClustCenters[i], newClustCenters[j]);
+				if (temp > maxValue)
+					maxValue = temp;
+			}
 		}
-	      }
-	      sum += maxValue;//finding sum(Rmax)
-	    }
-	    double avg = sum / org->active_ctr;
-	    //cout << "DB Index is " << avg;
-	    if(minDB > avg){
-	      minDB = avg;
-	    }
-	    if(maxDB < avg){
-	      maxDB = avg;
-	    }
-	   return avg;
-	    delete [] avgArr;
+		sum += maxValue;		  //finding sum(Rmax)
+	}
+	double avg = sum / org->active_ctr;
+	if (minDB > avg) {
+		minDB = avg;
+	}
+	if (maxDB < avg) {
+		maxDB = avg;
+	}
+	return avg;
 }
 
 /*
@@ -371,13 +348,15 @@ double DEMain::calcDBIndex(Individual* org){
  * Parameters : Individual
  */
 double DEMain::calcCSIndex(Individual* org){
-	
-	  double** newClustCenters = new double*[kmax];
+	for (int i = 0; i < kmax; i++) {
+		for (int m = 0; m < dim; m++) {
+			newClustCenters[i][m] = 0.0; //clearing old centroids
+		}
+	}
 	  double finalIntraSum = 0.0;
 	  double finalInterSum = 0.0;
 	  double csVal = 0.0;
 	  for(int i = 0; i < kmax; i++){
-		double* sumArr = new double[dim];
 		double intraClusSum = 0.0;
 		double tempIntraDist;
 		fill_n(sumArr, dim, 0);
@@ -405,7 +384,6 @@ double DEMain::calcCSIndex(Individual* org){
 			intraClusSum += maxIntraDist; //finding intra cluster distance
 		}// end for j
 		finalIntraSum += (intraClusSum / clusters[i]->size());
-		newClustCenters[i] = new double[dim];
 		for(int m = 0; m < dim; m++){
 		    newClustCenters[i][m] = sumArr[m]/clusters[i]->size(); //finding new centroids
 		}
@@ -429,11 +407,11 @@ double DEMain::calcCSIndex(Individual* org){
 	 }//end for i
 	   finalInterSum = interClusSum;
 	   csVal = finalIntraSum/finalInterSum;
-	   if(minDB > csVal){
-	      minDB = csVal;
+	   if(minCS > csVal){
+	      minCS = csVal;
 	    }
-	    if(maxDB < csVal){
-	      maxDB = csVal;
+	    if(maxCS < csVal){
+	      maxCS = csVal;
 	    }
 	  
 	   return csVal;
@@ -442,25 +420,20 @@ double DEMain::calcCSIndex(Individual* org){
 
 double DEMain::calcSD(){
 	double sum = 0.0;
-	int counter = 0;
 	for (int i = 0; i < numItems - 1; i++) {
-		distItem[i] = new double[numItems- 1 - i];
 		for (int j = i + 1; j < numItems ; j++) {
-			distItem[i][j - i - 1] = dist(attr[i]->items, attr[j]->items);
 			sum += distItem[i][j - i - 1];
-			counter++;
 		} //end j for
 	} // end i for
 	int num = numItems*(numItems - 1)/2;
-	assert(counter == num);
-	double mean = sum/counter;
+	double mean = sum/num;
 	double sumSD = 0.0;
 	for(int i = 0; i < numItems - 1; i++){
 		for (int j = i + 1; j < numItems ; j++) {
 			sumSD += pow((distItem[i][j - i - 1] - mean), 2.0);
 		}
 	}
-	double SD = sqrt(sumSD/counter);
+	double SD = sqrt(sumSD/num);
 	return SD;
 }
 
@@ -482,19 +455,33 @@ double DEMain::calcPBIndex(Individual* org) {
 			double sumInterCluster = 0.0;
 			int n = clusters[i]->size();
 			countIntraGroup += (n * (n - 1)) / 2;
-			countInterGroup += (n * (org->active_ctr - n)) / 2;
-
+			countInterGroup += (n * (numItems - n)) / 2;
 			for (vector<int>::size_type j = 0; j != clusters[i]->size(); j++) {
 				int a = clusters[i]->at(j);
-				for (int l = 0; l < numItems; l++) {
-					if (!(find(clusters[i]->begin(), clusters[i]->end(), l)!= clusters[i]->end())) {
-						if (l < a) {
-							sumInterCluster += distItem[l][a - (l + 1)];
-						} else{
-							sumInterCluster += distItem[a][l - (a + 1)];
+				for (int l = 0; l < i; l++) {
+					if (org->active[l]) {
+						for (vector<int>::size_type ind = 0; ind != clusters[l]->size(); ind++) {
+							int b = clusters[l]->at(ind);
+							if (b < a) {
+								sumInterCluster += distItem[b][a - (b + 1)];
+							} else {
+								sumInterCluster += distItem[a][b - (a + 1)];
+							}
 						}
 					}
-				}// end for l
+				}
+				for (int l = i + 1; l < kmax; l++) {
+					if (org->active[l]) {
+						for (vector<int>::size_type ind = 0; ind != clusters[l]->size(); ind++) {
+							int b = clusters[l]->at(ind);
+							if (b < a) {
+								sumInterCluster += distItem[b][a - (b + 1)];
+							} else {
+								sumInterCluster += distItem[a][b - (a + 1)];
+							}
+						}
+					}
+				}
 				for (vector<int>::size_type k = 0; k != clusters[i]->size();
 						k++) {
 					if (k != j) {
@@ -508,8 +495,8 @@ double DEMain::calcPBIndex(Individual* org) {
 					}
 				} //end for k
 			}//end for j
-			intraClusAvgDist += sumIntraCluster/clusters[i]->size(); //value of d_w
-			interClusAvgDist += sumInterCluster/(numItems - clusters[i]->size()); //value of d_b
+			intraClusAvgDist += sumIntraCluster/countIntraGroup; //value of d_w
+			interClusAvgDist += sumInterCluster/countInterGroup; //value of d_b
 		}//end if
 	}//end for i
 	double totalSums = (interClusAvgDist - intraClusAvgDist);
@@ -517,12 +504,12 @@ double DEMain::calcPBIndex(Individual* org) {
 	double sqrtVal = sqrt((countIntraGroup * countInterGroup) / t_val);
 	pbIndex = totalSums * sqrtVal / sd;
 	//Point biserial : (d_b*d_w)(sqrt(w_d*b_d/t^2))/sd
-	if(minDB > pbIndex){
-	      minDB = pbIndex;
-	    }
-	    if(maxDB < pbIndex){
-	      maxDB = pbIndex;
-	    }
+	if (minPB > pbIndex) {
+		minPB = pbIndex;
+	}
+	if (maxPB < pbIndex) {
+		maxPB = pbIndex;
+	}
 	 
 	return pbIndex;
 }
@@ -536,9 +523,6 @@ double DEMain::calcPBIndex(Individual* org) {
 double DEMain::calcFitness(Individual* org, int index, bool isInitial, int genNum) {// not using index right now
  // cout << "calcFitness method called" << endl;
   double fit = 0.0;
-  double maxValue = 0.0;
-  double sum = 0.0;
-  //	double eps = 0.5;
   int min_index = -1;	
   double temp_dist;
   int itemctr = 0;
@@ -548,7 +532,7 @@ double DEMain::calcFitness(Individual* org, int index, bool isInitial, int genNu
     clusters[i]->clear();
     }
 
- int initialActive = org->active_ctr;
+// int initialActive = org->active_ctr;
   while (itemctr < numItems) { //form clusters
     min_index = -1;
     double min = numeric_limits<double>::max();
@@ -580,14 +564,14 @@ double DEMain::calcFitness(Individual* org, int index, bool isInitial, int genNu
   }// end while
 
   //to print the initial cluster size before reshuffling/inactivating/moving clusters
-  int tempArr[org->active_ctr];
+  /*int tempArr[org->active_ctr];
   int tempC = 0;
   for (int i = 0; i < kmax; i++) {
     if (org->active[i]) {
       tempArr[tempC]= clusters[i]->size();
       tempC++;	
     }
-  }	
+  }	*/
  //inactivating empty clusters
   for (int i = 0; i < kmax; i++) {
     if (org->active[i]) {
@@ -598,7 +582,7 @@ double DEMain::calcFitness(Individual* org, int index, bool isInitial, int genNu
     }
 
   }
-  bool doReshuffle = uniform01() < 0.5 ? false : true;
+  bool doReshuffle = uniform01() < thresholdVal ? false : true;
   for (int i = 0; i < kmax; i++) {
     if (org->active[i]) {
       if (clusters[i]->size() == 1) {
@@ -633,7 +617,6 @@ double DEMain::calcFitness(Individual* org, int index, bool isInitial, int genNu
       }//size if
     }//active if
   }//end for
-  double avg = 0.0;
   if(org->active_ctr > 1) {
   if(indexForFit == 1) {
 	 // to calculate DB index
@@ -670,7 +653,7 @@ double DEMain::calcFitness(Individual* org, int index, bool isInitial, int genNu
 	  double pbVal = calcPBIndex(org);
 	  fit = pbVal;
   }
-   trackFile.open("clusters.txt", ofstream::app);
+   /* trackFile.open("clusters.txt", ofstream::app);
     trackFile << setiosflags(ios::left) ;
     trackFile << setw(5) << genNum << setw(12) << fit*100 << setw(5) << org->active_ctr << setw(5) <<tempC ;
     for(int i = 0; i < kmax; i++) {
@@ -679,7 +662,7 @@ double DEMain::calcFitness(Individual* org, int index, bool isInitial, int genNu
     trackFile << setw(5) << "|" ;
     for(int i = 0; i <tempC; i++){trackFile << setw(5) <<  tempArr[i] ;}
     trackFile << setw(5) << "|" << index << endl;
-    trackFile.close();
+    trackFile.close();*/
 
     return fit*100;
   }
@@ -696,7 +679,7 @@ double DEMain::calcFitness(Individual* org, int index, bool isInitial, int genNu
  * return type: void
  */
 
-void DEMain::selectSamples(int org, int *s1, int *s2, int *s3) {
+void DEMain::selectSamples(int org, int *s1, int *s2, int *s3) { // make change to pass by reference
   if (s1) {
     do {
       *s1 = uniformInRange(0, pSize-1);
@@ -714,7 +697,6 @@ void DEMain::selectSamples(int org, int *s1, int *s2, int *s3) {
       *s3 = uniformInRange(0, pSize-1);
     } while ((*s3 == org) || (*s3 == *s2) || (*s3 == *s1));
   }
- // cout << "selectSamples called" << endl;
   return;
 }
 
@@ -727,7 +709,6 @@ Individual* DEMain::crossover(int org, int gen, double min[], double max[]) {
   //cout << "crossover method called" << endl;
   int s1, s2, s3;
   double cr_prob = probability * ((generations - gen) / generations);
-//  scale = 0.1;  //temporary change
   double f_scale = scale * (1+uniform01());
   selectSamples(org, &s1, &s2, &s3);
   Individual* child = new Individual(kmax, dim);
@@ -746,8 +727,6 @@ Individual* DEMain::crossover(int org, int gen, double min[], double max[]) {
       if (change) {
 	child->clusCenter[j][i] = p->chromosome[s1]->clusCenter[j][i]
 	  + f_scale*(p->chromosome[s2]->clusCenter[j][i]- p->chromosome[s3]->clusCenter[j][i]);
-
-	//cout << p->chromosome[s1]->clusCenter[j][i] << " " << p->chromosome[s2]->clusCenter[j][i] <<  " " << p->chromosome[s3]->clusCenter[j][i] << " " << child->clusCenter[j][i] << endl;
       } else {
 	child->clusCenter[j][i] = p->chromosome[org]->clusCenter[j][i];
 
@@ -759,7 +738,7 @@ Individual* DEMain::crossover(int org, int gen, double min[], double max[]) {
     }//for i
     if (child->threshold[j] > 1 || child->threshold[j] < 0)
       child->threshold[j] = uniform01();
-    if (child->threshold[j] > 0.5) {
+    if (child->threshold[j] > thresholdVal) {
       child->active[j] = true;
       counter++;
     } else
@@ -767,20 +746,18 @@ Individual* DEMain::crossover(int org, int gen, double min[], double max[]) {
   }//for j
   assert(counter <= kmax);
   child->active_ctr = counter;
-  if(child->active_ctr < 2){
+  if(child->active_ctr < kmin){
     int num = child->active_ctr;
-    while (num < 2) {
+    while (num < kmin) {
       int i = uniformInRange(0, kmax - 1);
       if(!child->active[i]){
-	child->threshold[i] = uniformInRange(0.5, 1.0);
+	child->threshold[i] = uniformInRange(thresholdVal, 1.0);
 	child->active[i] = true;
 	child->active_ctr++;
 	num++;
       }
     }
   }
- 
-  // traceF << "Parent index : " << org << " s1, s2, s3 index " << s1 << " " << s2 << " " << s3 <<endl;
   return child;
 
 }
@@ -791,83 +768,61 @@ Individual* DEMain::crossover(int org, int gen, double min[], double max[]) {
 void DEMain::run(double min[], double max[]) {
  // cout << "run method called" << endl;
   int i = 0;
-  bool * new_pop = new bool[pSize];
+  fill_n(new_pop, pSize, false);
   double fitness;
-  try {
-    // traceF.open("popEval.txt", ofstream::app);
-
-    while (i < generations) {
-      Population* newpop = new Population(kmax, dim);
-      //traceF << "For generation " << i << endl;
-      for (int c = 0; c < pSize; c++) {
-	//cout << c << " iteration" << endl;
-	Individual *offspring;
-	offspring = crossover(c, i, min, max);
-	fitness = calcFitness(offspring, c, false, i);
-	offspring->setFitness(fitness);
-	if (p->chromosome[c]->rawFitness <= offspring->rawFitness) {
-	  //  traceF << endl;
-	  // traceF << "Parent replaced" << endl;
-	  new_pop[c] = true;
-//	  cout << "offspring added" << endl;
-	  newpop->chromosome[c] = offspring;
-	  for (int d = 0; d < numItems; d++) {
-	    tracker[d][c] = offspring_arr[d]; //updating the parent chromosome replaced with new cluster centers of offspring
-	  }
-	} else {
-	  // traceF << endl;
-	  // traceF << "Parent not replaced" << endl;
-	  new_pop[c] = false;
-//	  cout << "offspring discarded" << endl;
-	  delete offspring;
-	  newpop->chromosome[c] = p->chromosome[c];
-	  //delete [] offspring_arr;
+	try {
+		while (i < generations) {
+			Population* newpop = new Population(kmax, dim);
+			for (int c = 0; c < pSize; c++) {
+				Individual *offspring;
+				offspring = crossover(c, i, min, max);
+				fitness = calcFitness(offspring, c, false, i);
+				offspring->setFitness(fitness);
+				if (p->chromosome[c]->rawFitness <= offspring->rawFitness) {
+					new_pop[c] = true;
+					newpop->chromosome[c] = offspring;
+					for (int d = 0; d < numItems; d++) {
+						tracker[d][c] = offspring_arr[d]; //updating the parent chromosome replaced with new cluster centers of offspring
+					}
+				} else {
+					new_pop[c] = false;
+					delete offspring;
+					newpop->chromosome[c] = p->chromosome[c];
+				}
+			}
+			for (int c = 0; c < pSize; c++) {
+				if (new_pop[c]) {
+					delete p->chromosome[c];
+				}
+			}
+			delete[] p->chromosome;
+			p = newpop;
+			int bestInd = 0;
+			fitness = p->chromosome[0]->rawFitness;
+			for (int k = 1; k < pSize; k++) { //keeping track of the best member of the population
+				if (fitness < p->chromosome[k]->rawFitness) {
+					bestInd = k;
+					fitness = p->chromosome[k]->rawFitness;
+				}
+			}
+			p->bestChromosomeIndex = bestInd;
+			i++;
+		}
+		cout << endl;
+		cout << "Stopped at generation " << i << endl;
+		//find worst chromosome
+		int worstInd = 0;
+		double fitness = p->chromosome[0]->rawFitness;
+		for (int k = 1; k < pSize; k++) {
+			if (fitness > p->chromosome[k]->rawFitness) {
+				worstInd = k;
+				fitness = p->chromosome[k]->rawFitness;
+			}
+		}
+		report(p->bestChromosomeIndex, worstInd);
+	} catch (exception& e) {
+		cerr << e.what() << endl;
 	}
-      }
-     // cout << "Generation " << i << " completed" << endl;
-      //assert(newpop != NULL);
-      for (int c = 0; c < pSize; c++) {
-	if (new_pop[c]) {
-	  delete p->chromosome[c];
-	}
-      }
-      delete [] p->chromosome;
-      p = newpop;
-      int bestInd = 0;
-      fitness = p->chromosome[0]->rawFitness;
-      for (int k = 1; k < pSize; k++) {
-	if (fitness < p->chromosome[k]->rawFitness) {
-	  bestInd = k;
-	  fitness = p->chromosome[k]->rawFitness;
-	}
-      }
-      p->bestChromosomeIndex = bestInd;
-      //	trackFile.open("clusters.txt", ofstream::app);
-      //	trackFile << "Generation " << i << " finished" << endl;
-      //	trackFile << "Best chromosome index is " << bestInd << " and fitness is " << fitness << endl;
-      //	trackFile << "--------------------------------------" << endl;
-      //   traceF << "-----------------------------------------------" << endl;
-      //	trackFile.close();
-      i++;
-    }
-    // traceF.close();
-    cout << endl;
-    cout << "Stopped at generation " << i << endl;
-    //find best chromosome
-    	int worstInd = 0;
-	double fitness = p->chromosome[0]->rawFitness;
-	for (int k = 1; k < pSize; k++) {
-	if (fitness > p->chromosome[k]->rawFitness) {
-	worstInd = k;
-	fitness = p->chromosome[k]->rawFitness;
-	}
-	}
-    //assert(bestInd != -1);
-	report(p->bestChromosomeIndex, worstInd);
-  }
-  catch (exception& e) {
-    cerr << e.what() << endl;
-  }
 }
 
 /*
@@ -877,7 +832,7 @@ void DEMain::run(double min[], double max[]) {
  */
 void DEMain::report(int index, int worstInd) {
   ofstream outputFile;
-  outputFile.open("data_1000.txt");
+  outputFile.open("results.txt");
   outputFile << "The final clusters obtained are:" << endl;
   int clus_index = -1;
   for(int i = 0; i < kmax; ++i) {
@@ -896,6 +851,7 @@ void DEMain::report(int index, int worstInd) {
   for (int k = 0; k < kmax; k++) {
     if (org->active[k]) {
       activeCount++;
+      outputFile << "-------------------------------------------" << endl;
       outputFile << "Elements of cluster " << k << " :" << endl;
       for (vector<int>::size_type j = 0; j != clusters[k]->size(); j++){
 	int a = clusters[k]->at(j);
@@ -927,6 +883,7 @@ void DEMain::report(int index, int worstInd) {
   for (int k = 0; k < kmax; k++) {
     if (org->active[k]) {
       activeCount++;
+      outputFile << "-------------------------------------------" << endl;
       outputFile << "Elements of cluster " << k << " :" << endl;
       for (vector<int>::size_type j = 0; j != clusters[k]->size(); j++){
 	int a = clusters[k]->at(j);
@@ -959,6 +916,7 @@ void DEMain::report(int index, int worstInd) {
 	assert(min_index != -1);
 	clusters[min_index]->push_back(i);
 	}
+	outputFile << "-------------------------------------------" << endl;
 	outputFile << "Worst fitness cluster without tweaking" << endl;
 	for (int k = 0; k < kmax; k++) {
 	  if (org->active[k] && !clusters[k]->empty()) {
@@ -977,7 +935,15 @@ void DEMain::report(int index, int worstInd) {
 	}
   outputFile << "Total number of clusters obtained : " << activeCount
 	     << endl;
-   outputFile << "Min index is " << minDB << " Max index is " << maxDB << endl;
+  if(indexForFit == 1){
+   outputFile << "Min DB index is " << minDB << " Max DB index is " << maxDB << endl;
+  }
+  else if(indexForFit == 2){
+	  outputFile << "Min CS index is " << minCS << " Max CS index is " << maxCS << endl;
+  }
+  else{
+	  outputFile << "Min PB index is " << minPB << " Max PB index is " << maxPB << endl;
+  }
   outputFile.close();
   cout << "Result saved in file.";
   delete [] arr;

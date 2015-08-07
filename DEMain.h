@@ -13,6 +13,7 @@
 #include "Individual.h"
 #include "Population.h"
 #include "Item.h"
+#include "Parameters.h"
 #include <utility>
 #include <vector>
 #include <cstdlib>
@@ -27,8 +28,8 @@ public:
 //typedef double (*compfn)(const void*, const void*);
 class DEMain {
 public:
-	DEMain(int kmax, int dim, int gen, int** placeholder, Item** items, int itemSize, int calcVal);
-	virtual ~DEMain();
+	DEMain(int dim, int** placeholder, Item** items, int itemSize, int validityIndex, Parameters param);
+	~DEMain();
 	void setup(double min[],double max[]);
 	double calcFitness(Individual* org, int index, bool isInitial, int genNum);
 	double dist(double* x, double* y);
@@ -48,11 +49,13 @@ public:
 	int strategy;
 	double scale;
 	double probability;
-	int generations;
+	long generations;
 	int pSize;
 	int kmax;
+	int kmin;
 	int dim;
 	int numItems;
+	double thresholdVal;
 	int** tracker;
 	Item** attr;
 	vector<int>** clusters;
@@ -60,6 +63,13 @@ public:
 	int* offspring_arr;
 	double** distItem;
 	int indexForFit;
+	bool* ItemUsed;
+	bool* ClusFull;
+	double* avgArr;
+	double** newClustCenters;
+	double* sumArr;
+	int* ItemCounter;
+	bool * new_pop;
 private:
 	void Rand1Bin(int candIndex);
 };

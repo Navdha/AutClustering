@@ -7,6 +7,7 @@
 #include "Population.h"
 #include "Item.h"
 #include "DEMain.h"
+#include "Parameters.h"
 #include <iostream>
 #include <sstream>
 #include <fstream>
@@ -31,23 +32,34 @@ string exec(const char* cmd) {
     return result;
 }
 
-int main(){
-	const int kmax = 20;
-	const int gen = 1000;
+int main(int argc, char** argv){
+	//const int kmax = 20;
+	//const int gen = 1000;
 	const int isDB = 1; //enum implementation 1 : DB, 2 : CS, 3: PB
 	string ip_file, ip, lines, buffer, item;
 	int val, dim, counter = 0;
 	Item** objects;
 	int** track;
-	 srand(time(NULL));
-	cout << "Enter your file name";
-	cin >> ip_file;
-	//	 ip_file = "iris.csv";
+	srand(time(NULL));
+	//cin >> ip_file;
+	 if (argc != 9){
+	    cerr << "Usage: " << argv[0]
+	         << " filename CrMax CrMin scaleFactor thresholdVal kmax kmin numGenerations"
+	         << endl;
+	    exit(1);
+	  }
+	ip_file = argv[1];
+	double CrMaximum = atof(argv[2]);
+	double CrMinimum = atof(argv[3]);
+	double FScaleProb = atof(argv[4]);
+	double threshVal = atof(argv[5]);
+	int kmax = atoi(argv[6]);
+	int kmin = atoi(argv[7]);
+	int gen = atoi(argv[8]);
+
+
 	ip = "wc -l " + ip_file; // find the number of lines in csv file that determines the number of items to cluster.
-//	cout << ip << endl;
-//	system("wc -l wine.csv");
 	lines = exec(ip.c_str());
-//	cout << lines << endl;
 	if(!lines.empty()){
 		val = atoi(lines.c_str());
 	}
@@ -82,9 +94,7 @@ int main(){
 				for(int i = 0; i < numFeatures; i++)
 				     {
 						getline(in, item, ',');
-						//cout << item << " ";
 						double value = atof(item.c_str());
-						//cout << value << " ";
 						objects[counter]->items[i] = value;
 						if(min[i] > value){
 							min[i] = value;
@@ -95,7 +105,6 @@ int main(){
 				     }
 				getline(in, item, ',');
 				objects[counter]->typeClass = atoi(item.c_str());
-				//cout << endl;
 				counter++;
 			}
 		cout << "The arrays are " <<endl;
@@ -108,7 +117,9 @@ int main(){
 		cout << max[i] << " ";
 		}
 
-		DEMain obj(kmax, numFeatures, gen, track, objects, val, isDB);
+		Parameters param(CrMaximum, CrMinimum, FScaleProb, threshVal, kmax, kmin, gen);
+
+		DEMain obj(numFeatures, track, objects, val, isDB, param);
 		obj.setup(min, max);
 		obj.calcDistBtwnItems();
 		obj.run(min, max);
