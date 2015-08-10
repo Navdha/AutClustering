@@ -10,12 +10,12 @@
 #include <iostream>
 
 
-Population::Population(int kmax, int dim, int size){
+Population::Population(int kmax, int dim){
 //	cout << "Population class constructor called" << endl;
-	psize = size;
+	size = 10*dim;
 	chromosome = new Individual*[size];
 	bestChromosomeIndex = -1;
-	worstChromosomeIndex = -1;
+	//worstChromosomeIndex = -1;
 	assert(chromosome != NULL);
 	  /*for (int i = 0; i < size; i++){
 		  chromosome[i] = new Individual(kmax, dim);
@@ -25,7 +25,7 @@ Population::Population(int kmax, int dim, int size){
 Population::~Population() {
 	// TODO Auto-generated destructor stub
 	//cout << "Pop destructor" << endl;
-	for (int i = 0; i < psize; i++)
+	for (int i = 0; i < size; i++)
 	    delete chromosome[i];
 
 	  delete [] chromosome;

@@ -15,7 +15,7 @@ class Individual {
 public:
 	Individual(int kmax, int dim);
 	~Individual();
-	Individual(const Individual& obj);
+
 	double rawFitness;
 	bool valid;
 	double** clusCenter;
@@ -23,7 +23,6 @@ public:
 	bool* active;
 	int active_ctr;
 	int k;
-	int dimension;
 	//vector<int>** clusters;
 
 	bool isValid();
@@ -32,8 +31,6 @@ public:
 	double getFitness();
 	void setFitness(double rawFitness);
 	//bool operator<=(const Individual& right);
-	friend ostream& operator<<(ostream& o, const Individual& org);
-
 };
 
 #endif /* INDIVIDUAL_H_ */

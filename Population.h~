@@ -13,16 +13,16 @@
 
 class Population {
 public:
-  Population(int kmax, int dim, int size);
+	Population(int kmax, int dim);
 	virtual ~Population();
 	void setIndividial(Individual* individual, int index);
 	//Individual getIndividual(int index);
 
-	int psize;
+	int size;
 	Individual** chromosome;//change name
 	void print(int index);
 	int bestChromosomeIndex;
-	int worstChromosomeIndex;
+	//int worstChromosomeIndex;
 };
 
 #endif /* POPULATION_H_ */
