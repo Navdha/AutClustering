@@ -1,0 +1,403 @@
+Initial average fitness is 78.9804
+Max fitness initially 231.542 for index 8 and # of clusters 2
+Min fitness initially 23.5485 for index 13 and # of clusters 8
+for generation 0 : 
+Max fitness 231.542for index 8 and # of clusters 2
+Min fitness 39.9578for index 13 and # of clusters 7
+Average fitness 84.0533
+for generation 1 : 
+Max fitness 231.542for index 8 and # of clusters 2
+Min fitness 39.9578for index 13 and # of clusters 7
+Average fitness 84.4061
+for generation 2 : 
+Max fitness 231.542for index 8 and # of clusters 2
+Min fitness 39.9578for index 13 and # of clusters 7
+Average fitness 84.4061
+for generation 3 : 
+Max fitness 231.542for index 8 and # of clusters 2
+Min fitness 39.9578for index 13 and # of clusters 7
+Average fitness 84.4061
+for generation 4 : 
+Max fitness 231.542for index 8 and # of clusters 2
+Min fitness 39.9578for index 13 and # of clusters 7
+Average fitness 84.4061
+for generation 5 : 
+Max fitness 231.542for index 8 and # of clusters 2
+Min fitness 39.9578for index 13 and # of clusters 7
+Average fitness 84.4061
+for generation 6 : 
+Max fitness 231.542for index 8 and # of clusters 2
+Min fitness 39.9578for index 13 and # of clusters 7
+Average fitness 84.4061
+for generation 7 : 
+Max fitness 231.542for index 8 and # of clusters 2
+Min fitness 44.6429for index 37 and # of clusters 6
+Average fitness 85.4252
+for generation 8 : 
+Max fitness 231.542for index 8 and # of clusters 2
+Min fitness 44.6429for index 37 and # of clusters 6
+Average fitness 85.4252
+for generation 9 : 
+Max fitness 231.542for index 8 and # of clusters 2
+Min fitness 44.6429for index 37 and # of clusters 6
+Average fitness 85.4252
+for generation 10 : 
+Max fitness 231.542for index 8 and # of clusters 2
+Min fitness 44.6429for index 37 and # of clusters 6
+Average fitness 85.4252
+for generation 11 : 
+Max fitness 231.542for index 8 and # of clusters 2
+Min fitness 44.6429for index 37 and # of clusters 6
+Average fitness 85.4252
+for generation 12 : 
+Max fitness 231.542for index 8 and # of clusters 2
+Min fitness 44.6429for index 37 and # of clusters 6
+Average fitness 85.4252
+for generation 13 : 
+Max fitness 231.542for index 8 and # of clusters 2
+Min fitness 44.6429for index 37 and # of clusters 6
+Average fitness 85.4252
+for generation 14 : 
+Max fitness 231.542for index 8 and # of clusters 2
+Min fitness 44.6429for index 37 and # of clusters 6
+Average fitness 85.4252
+for generation 15 : 
+Max fitness 231.542for index 8 and # of clusters 2
+Min fitness 44.6429for index 37 and # of clusters 6
+Average fitness 85.4252
+for generation 16 : 
+Max fitness 231.542for index 8 and # of clusters 2
+Min fitness 44.6429for index 37 and # of clusters 6
+Average fitness 85.4252
+for generation 17 : 
+Max fitness 231.542for index 8 and # of clusters 2
+Min fitness 44.6429for index 37 and # of clusters 6
+Average fitness 85.4252
+for generation 18 : 
+Max fitness 231.542for index 8 and # of clusters 2
+Min fitness 44.6429for index 37 and # of clusters 6
+Average fitness 85.4252
+for generation 19 : 
+Max fitness 231.542for index 8 and # of clusters 2
+Min fitness 44.6429for index 37 and # of clusters 6
+Average fitness 85.4252
+for generation 20 : 
+Max fitness 231.542for index 8 and # of clusters 2
+Min fitness 44.6429for index 37 and # of clusters 6
+Average fitness 85.4252
+for generation 21 : 
+Max fitness 231.542for index 8 and # of clusters 2
+Min fitness 44.6429for index 37 and # of clusters 6
+Average fitness 85.4252
+for generation 22 : 
+Max fitness 231.542for index 8 and # of clusters 2
+Min fitness 44.6429for index 37 and # of clusters 6
+Average fitness 85.4252
+for generation 23 : 
+Max fitness 231.542for index 8 and # of clusters 2
+Min fitness 44.6429for index 37 and # of clusters 6
+Average fitness 85.4252
+for generation 24 : 
+Max fitness 231.542for index 8 and # of clusters 2
+Min fitness 44.6429for index 37 and # of clusters 6
+Average fitness 85.4252
+for generation 25 : 
+Max fitness 231.542for index 8 and # of clusters 2
+Min fitness 44.6429for index 37 and # of clusters 6
+Average fitness 85.4252
+for generation 26 : 
+Max fitness 231.542for index 8 and # of clusters 2
+Min fitness 44.6429for index 37 and # of clusters 6
+Average fitness 85.4252
+for generation 27 : 
+Max fitness 231.542for index 8 and # of clusters 2
+Min fitness 44.6429for index 37 and # of clusters 6
+Average fitness 85.4252
+for generation 28 : 
+Max fitness 231.542for index 8 and # of clusters 2
+Min fitness 44.6429for index 37 and # of clusters 6
+Average fitness 85.4252
+for generation 29 : 
+Max fitness 231.542for index 8 and # of clusters 2
+Min fitness 44.6429for index 37 and # of clusters 6
+Average fitness 85.4252
+for generation 30 : 
+Max fitness 231.542for index 8 and # of clusters 2
+Min fitness 44.6429for index 37 and # of clusters 6
+Average fitness 85.4252
+for generation 31 : 
+Max fitness 231.542for index 8 and # of clusters 2
+Min fitness 44.6429for index 37 and # of clusters 6
+Average fitness 85.4252
+for generation 32 : 
+Max fitness 231.542for index 8 and # of clusters 2
+Min fitness 44.6429for index 37 and # of clusters 6
+Average fitness 85.4252
+for generation 33 : 
+Max fitness 231.542for index 8 and # of clusters 2
+Min fitness 44.6429for index 37 and # of clusters 6
+Average fitness 85.4252
+for generation 34 : 
+Max fitness 231.542for index 8 and # of clusters 2
+Min fitness 44.6429for index 37 and # of clusters 6
+Average fitness 85.4252
+for generation 35 : 
+Max fitness 231.542for index 8 and # of clusters 2
+Min fitness 44.6429for index 37 and # of clusters 6
+Average fitness 85.4252
+for generation 36 : 
+Max fitness 231.542for index 8 and # of clusters 2
+Min fitness 44.6429for index 37 and # of clusters 6
+Average fitness 85.4252
+for generation 37 : 
+Max fitness 231.542for index 8 and # of clusters 2
+Min fitness 44.6429for index 37 and # of clusters 6
+Average fitness 85.4252
+for generation 38 : 
+Max fitness 231.542for index 8 and # of clusters 2
+Min fitness 44.6429for index 37 and # of clusters 6
+Average fitness 85.4252
+for generation 39 : 
+Max fitness 231.542for index 8 and # of clusters 2
+Min fitness 44.6429for index 37 and # of clusters 6
+Average fitness 85.4252
+for generation 40 : 
+Max fitness 231.542for index 8 and # of clusters 2
+Min fitness 44.6429for index 37 and # of clusters 6
+Average fitness 85.4252
+for generation 41 : 
+Max fitness 231.542for index 8 and # of clusters 2
+Min fitness 44.6429for index 37 and # of clusters 6
+Average fitness 85.4252
+for generation 42 : 
+Max fitness 231.542for index 8 and # of clusters 2
+Min fitness 44.6429for index 37 and # of clusters 6
+Average fitness 85.4252
+for generation 43 : 
+Max fitness 231.542for index 8 and # of clusters 2
+Min fitness 44.6429for index 37 and # of clusters 6
+Average fitness 85.4252
+for generation 44 : 
+Max fitness 231.542for index 8 and # of clusters 2
+Min fitness 44.6429for index 37 and # of clusters 6
+Average fitness 85.4252
+for generation 45 : 
+Max fitness 231.542for index 8 and # of clusters 2
+Min fitness 44.6429for index 37 and # of clusters 6
+Average fitness 85.4252
+for generation 46 : 
+Max fitness 231.542for index 8 and # of clusters 2
+Min fitness 44.6429for index 37 and # of clusters 6
+Average fitness 85.4252
+for generation 47 : 
+Max fitness 231.542for index 8 and # of clusters 2
+Min fitness 44.6429for index 37 and # of clusters 6
+Average fitness 85.4252
+for generation 48 : 
+Max fitness 231.542for index 8 and # of clusters 2
+Min fitness 44.6429for index 37 and # of clusters 6
+Average fitness 85.4252
+for generation 49 : 
+Max fitness 231.542for index 8 and # of clusters 2
+Min fitness 44.6429for index 37 and # of clusters 6
+Average fitness 85.4252
+for generation 50 : 
+Max fitness 231.542for index 8 and # of clusters 2
+Min fitness 44.6429for index 37 and # of clusters 6
+Average fitness 85.4252
+for generation 51 : 
+Max fitness 231.542for index 8 and # of clusters 2
+Min fitness 44.6429for index 37 and # of clusters 6
+Average fitness 85.4252
+for generation 52 : 
+Max fitness 231.542for index 8 and # of clusters 2
+Min fitness 44.6429for index 37 and # of clusters 6
+Average fitness 85.4252
+for generation 53 : 
+Max fitness 231.542for index 8 and # of clusters 2
+Min fitness 44.6429for index 37 and # of clusters 6
+Average fitness 85.4252
+for generation 54 : 
+Max fitness 231.542for index 8 and # of clusters 2
+Min fitness 44.6429for index 37 and # of clusters 6
+Average fitness 85.4252
+for generation 55 : 
+Max fitness 231.542for index 8 and # of clusters 2
+Min fitness 44.6429for index 37 and # of clusters 6
+Average fitness 85.4252
+for generation 56 : 
+Max fitness 231.542for index 8 and # of clusters 2
+Min fitness 44.6429for index 37 and # of clusters 6
+Average fitness 85.4252
+for generation 57 : 
+Max fitness 231.542for index 8 and # of clusters 2
+Min fitness 44.6429for index 37 and # of clusters 6
+Average fitness 85.4252
+for generation 58 : 
+Max fitness 231.542for index 8 and # of clusters 2
+Min fitness 44.6429for index 37 and # of clusters 6
+Average fitness 85.4252
+for generation 59 : 
+Max fitness 231.542for index 8 and # of clusters 2
+Min fitness 44.6429for index 37 and # of clusters 6
+Average fitness 85.4252
+for generation 60 : 
+Max fitness 231.542for index 8 and # of clusters 2
+Min fitness 44.6429for index 37 and # of clusters 6
+Average fitness 85.4252
+for generation 61 : 
+Max fitness 231.542for index 8 and # of clusters 2
+Min fitness 44.6429for index 37 and # of clusters 6
+Average fitness 85.4252
+for generation 62 : 
+Max fitness 231.542for index 8 and # of clusters 2
+Min fitness 44.6429for index 37 and # of clusters 6
+Average fitness 85.4252
+for generation 63 : 
+Max fitness 231.542for index 8 and # of clusters 2
+Min fitness 44.6429for index 37 and # of clusters 6
+Average fitness 85.4252
+for generation 64 : 
+Max fitness 231.542for index 8 and # of clusters 2
+Min fitness 44.6429for index 37 and # of clusters 6
+Average fitness 85.4252
+for generation 65 : 
+Max fitness 231.542for index 8 and # of clusters 2
+Min fitness 44.6429for index 37 and # of clusters 6
+Average fitness 85.4252
+for generation 66 : 
+Max fitness 231.542for index 8 and # of clusters 2
+Min fitness 44.6429for index 37 and # of clusters 6
+Average fitness 85.4252
+for generation 67 : 
+Max fitness 231.542for index 8 and # of clusters 2
+Min fitness 44.6429for index 37 and # of clusters 6
+Average fitness 85.4252
+for generation 68 : 
+Max fitness 231.542for index 8 and # of clusters 2
+Min fitness 44.6429for index 37 and # of clusters 6
+Average fitness 85.4252
+for generation 69 : 
+Max fitness 231.542for index 8 and # of clusters 2
+Min fitness 44.6429for index 37 and # of clusters 6
+Average fitness 85.4252
+for generation 70 : 
+Max fitness 231.542for index 8 and # of clusters 2
+Min fitness 44.6429for index 37 and # of clusters 6
+Average fitness 85.4252
+for generation 71 : 
+Max fitness 231.542for index 8 and # of clusters 2
+Min fitness 44.6429for index 37 and # of clusters 6
+Average fitness 85.4252
+for generation 72 : 
+Max fitness 231.542for index 8 and # of clusters 2
+Min fitness 44.6429for index 37 and # of clusters 6
+Average fitness 85.4252
+for generation 73 : 
+Max fitness 231.542for index 8 and # of clusters 2
+Min fitness 44.6429for index 37 and # of clusters 6
+Average fitness 85.4252
+for generation 74 : 
+Max fitness 231.542for index 8 and # of clusters 2
+Min fitness 44.6429for index 37 and # of clusters 6
+Average fitness 85.4252
+for generation 75 : 
+Max fitness 231.542for index 8 and # of clusters 2
+Min fitness 44.6429for index 37 and # of clusters 6
+Average fitness 85.4252
+for generation 76 : 
+Max fitness 231.542for index 8 and # of clusters 2
+Min fitness 44.6429for index 37 and # of clusters 6
+Average fitness 85.4252
+for generation 77 : 
+Max fitness 231.542for index 8 and # of clusters 2
+Min fitness 44.6429for index 37 and # of clusters 6
+Average fitness 85.4252
+for generation 78 : 
+Max fitness 231.542for index 8 and # of clusters 2
+Min fitness 44.6429for index 37 and # of clusters 6
+Average fitness 85.4252
+for generation 79 : 
+Max fitness 231.542for index 8 and # of clusters 2
+Min fitness 44.6429for index 37 and # of clusters 6
+Average fitness 85.4252
+for generation 80 : 
+Max fitness 231.542for index 8 and # of clusters 2
+Min fitness 44.6429for index 37 and # of clusters 6
+Average fitness 85.4252
+for generation 81 : 
+Max fitness 231.542for index 8 and # of clusters 2
+Min fitness 44.6429for index 37 and # of clusters 6
+Average fitness 85.4252
+for generation 82 : 
+Max fitness 231.542for index 8 and # of clusters 2
+Min fitness 44.6429for index 37 and # of clusters 6
+Average fitness 85.4252
+for generation 83 : 
+Max fitness 231.542for index 8 and # of clusters 2
+Min fitness 44.6429for index 37 and # of clusters 6
+Average fitness 85.4252
+for generation 84 : 
+Max fitness 231.542for index 8 and # of clusters 2
+Min fitness 44.6429for index 37 and # of clusters 6
+Average fitness 85.4252
+for generation 85 : 
+Max fitness 231.542for index 8 and # of clusters 2
+Min fitness 44.6429for index 37 and # of clusters 6
+Average fitness 85.4252
+for generation 86 : 
+Max fitness 231.542for index 8 and # of clusters 2
+Min fitness 44.6429for index 37 and # of clusters 6
+Average fitness 85.4252
+for generation 87 : 
+Max fitness 231.542for index 8 and # of clusters 2
+Min fitness 44.6429for index 37 and # of clusters 6
+Average fitness 85.4252
+for generation 88 : 
+Max fitness 231.542for index 8 and # of clusters 2
+Min fitness 44.6429for index 37 and # of clusters 6
+Average fitness 85.4252
+for generation 89 : 
+Max fitness 231.542for index 8 and # of clusters 2
+Min fitness 44.6429for index 37 and # of clusters 6
+Average fitness 85.4252
+for generation 90 : 
+Max fitness 231.542for index 8 and # of clusters 2
+Min fitness 44.6429for index 37 and # of clusters 6
+Average fitness 85.4252
+for generation 91 : 
+Max fitness 231.542for index 8 and # of clusters 2
+Min fitness 44.6429for index 37 and # of clusters 6
+Average fitness 85.4252
+for generation 92 : 
+Max fitness 231.542for index 8 and # of clusters 2
+Min fitness 44.6429for index 37 and # of clusters 6
+Average fitness 85.4252
+for generation 93 : 
+Max fitness 231.542for index 8 and # of clusters 2
+Min fitness 44.6429for index 37 and # of clusters 6
+Average fitness 85.4252
+for generation 94 : 
+Max fitness 231.542for index 8 and # of clusters 2
+Min fitness 44.6429for index 37 and # of clusters 6
+Average fitness 85.4252
+for generation 95 : 
+Max fitness 231.542for index 8 and # of clusters 2
+Min fitness 44.6429for index 37 and # of clusters 6
+Average fitness 85.4252
+for generation 96 : 
+Max fitness 231.542for index 8 and # of clusters 2
+Min fitness 44.6429for index 37 and # of clusters 6
+Average fitness 85.4252
+for generation 97 : 
+Max fitness 231.542for index 8 and # of clusters 2
+Min fitness 44.6429for index 37 and # of clusters 6
+Average fitness 85.4252
+for generation 98 : 
+Max fitness 231.542for index 8 and # of clusters 2
+Min fitness 44.6429for index 37 and # of clusters 6
+Average fitness 85.4252
+for generation 99 : 
+Max fitness 231.542for index 8 and # of clusters 2
+Min fitness 44.6429for index 37 and # of clusters 6
+Average fitness 85.4252
