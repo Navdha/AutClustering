@@ -12,17 +12,16 @@
 
 
 class Population {
-public:
-	Population(int kmax, int dim);
-	virtual ~Population();
-	void setIndividial(Individual* individual, int index);
-	//Individual getIndividual(int index);
+ public:
+  Population(int maxNumClusters, int numFeatures, int popFactorScale);
+  ~Population();
 
-	int size;
-	Individual** chromosome;//change name
-	void print(int index);
-	int bestChromosomeIndex;
-	//int worstChromosomeIndex;
+  int popSize;
+  Individual** org;
+  int bestOrgIndex;
+  int worstOrgIndex;
+  friend ostream& operator<<(ostream& o, const Population& pop);
+	
 };
 
 #endif /* POPULATION_H_ */

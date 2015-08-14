@@ -12,25 +12,23 @@
 
 using namespace std;
 class Individual {
-public:
-	Individual(int kmax, int dim);
-	~Individual();
+ public:
+  Individual(int kmax, int dim);
+  Individual(const Individual& org);
+  ~Individual();
 
-	double rawFitness;
-	bool valid;
-	double** clusCenter;
-	double* threshold;
-	bool* active;
-	int active_ctr;
-	int k;
-	//vector<int>** clusters;
+  double rawFitness;
+  double** clusCenter;  // array holding the centroids of active clusters
+  double* activationThreshold;
+  bool* active;
+  int numActiveClusters; // number of active clusters
+  int maxNumClusters;          // maximum number of clusters
+  int numFeatures;  // number of features
+  //vector<int>** clusters;
 
-	bool isValid();
-	bool getValid();
-	void setValid(bool valid);
-	double getFitness();
-	void setFitness(double rawFitness);
-	//bool operator<=(const Individual& right);
-};
+
+  friend ostream& operator<<(ostream& o, const Individual& org);
+
+};//end Individual
 
 #endif /* INDIVIDUAL_H_ */

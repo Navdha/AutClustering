@@ -11,14 +11,14 @@
 using namespace std;
 
 Item::Item(int dim) {
-	// TODO Auto-generated constructor stub
-	//cout << "Constructor called" << endl;
- this->dim = dim;
- items = new double[dim];
- typeClass = 0;
+  // TODO Auto-generated constructor stub
+  //cout << "Constructor called" << endl;
+  numFeatures = dim;
+  items = new double[numFeatures];
+  typeClass = 0;
 }
 
 Item::~Item() {
-	// TODO Auto-generated destructor stub
+  // TODO Auto-generated destructor stub
 }
 

@@ -9,16 +9,17 @@
 #define PARAMETERS_H_
 
 class Parameters {
-public:
-	double CrMax;
-	double CrMin;
-	double FScale;
-	double threshold;
-	int kmax;
-	int kmin;
-	long gen;
-	Parameters(double CrMaximum, double CrMinimum, double FScaleProb, double threshVal, int kmaxVal, int kminVal, long numGen);
-    ~Parameters();
+ public:
+  double CrMax;
+  double CrMin;
+  double FScale;
+  double threshold;
+  int maxNumClusters;
+  int minNumClusters;
+  int popScaleFactor;
+  double gen;
+  Parameters(double CrMaximum, double CrMinimum, double FScaleProb, double threshVal, int maxClusters, int minClusters, int popScale, double numGen);
+  ~Parameters();
 };
 
 

@@ -8,17 +8,18 @@
 #include "Parameters.h"
 
 Parameters::Parameters(double CrMaximum, double CrMinimum, double FScaleProb,
-		double threshVal, int kmaxVal, int kminVal, long numGen) {
-	// TODO Auto-generated constructor stub
-	kmax = kmaxVal;
-	kmin = kminVal;
-	threshold = threshVal;
-	CrMax = CrMaximum;
-	CrMin = CrMinimum;
-	FScale = FScaleProb;
-	gen = numGen;
+		       double threshVal,  int maxClusters, int minClusters, int popScale, double numGen) {
+  // TODO Auto-generated constructor stub
+  maxNumClusters = maxClusters;
+  minNumClusters = minClusters;
+  threshold = threshVal;
+  CrMax = CrMaximum;
+  CrMin = CrMinimum;
+  FScale = FScaleProb;
+  popScaleFactor = popScale;
+  gen = numGen;
 }
 
 Parameters::~Parameters() {
-	// TODO Auto-generated destructor stub
+  // TODO Auto-generated destructor stub
 }
