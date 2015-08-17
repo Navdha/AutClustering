@@ -8,7 +8,7 @@
 #include "Parameters.h"
 
 Parameters::Parameters(double CrMaximum, double CrMinimum, double FScaleProb,
-		       double threshVal,  int maxClusters, int minClusters, int popScale, double numGen) {
+		       double threshVal,  int maxClusters, int minClusters, int popScale, double numGen, int numC) {
   // TODO Auto-generated constructor stub
   maxNumClusters = maxClusters;
   minNumClusters = minClusters;
@@ -18,6 +18,7 @@ Parameters::Parameters(double CrMaximum, double CrMinimum, double FScaleProb,
   FScale = FScaleProb;
   popScaleFactor = popScale;
   gen = numGen;
+  numClasses = numC;
 }
 
 Parameters::~Parameters() {

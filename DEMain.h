@@ -45,6 +45,8 @@ public:
   double calcCSIndex(Individual* org);
   double calcPBIndex(Individual* org);
   double calcSD();
+  void printClusters(int popIndex);
+  double MI(int popInd1, int popInd2, bool isFinal);
 
   Population* popObject;
   int strategy;
@@ -72,6 +74,7 @@ public:
   int* ItemCounter;
   int popScaleFactor;
   bool * isReplaceOrg;
+  int numClasses;
  private:
   void Rand1Bin(int candIndex);
 };

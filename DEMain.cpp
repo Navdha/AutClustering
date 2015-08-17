@@ -18,7 +18,7 @@
 #include <algorithm>
 #include <iterator>
 #include <stdexcept>
-
+#include <set>
 using namespace std;
 
 random_device seed;
@@ -46,7 +46,7 @@ double minCS = std::numeric_limits<double>::max();
 double maxCS= std::numeric_limits<double>::min();
 double minPB = std::numeric_limits<double>::max();
 double maxPB= std::numeric_limits<double>::min();
-
+vector<int>** origClustering;
 ofstream trackFile;
 ofstream trackOff;
 
@@ -61,6 +61,7 @@ int compare(const void *p1, const void *p2){
   else
     return 0;
 }
+
 
 DEMain::DEMain(int dim, int** tracebackArr, Item** items, int itemSize, int validityIndex, Parameters param) {
 	// TODO Auto-generated constructor stub
@@ -96,6 +97,7 @@ DEMain::DEMain(int dim, int** tracebackArr, Item** items, int itemSize, int vali
 	ItemCounter = new int[numItems]; //used in reshuffle
 	newClustCenters = new double*[maxNumClusters]; //used in calcCS
 	isReplaceOrg = new bool[popSize];
+	numClasses = param.numClasses;
 	for (int count = 0; count < maxNumClusters; count++) {
 		clusters[count] = new vector<int>;
 		newClustCenters[count] = new double[dim];
@@ -141,6 +143,40 @@ void DEMain::calcDistBtwnItems() {
   }  // end i for
 
 }
+
+void DEMain::printClusters(int popIndex) {
+  int clusIndex;
+  for (int c = 0; c < maxNumClusters; ++c) {
+    clusters[c]->clear();
+  }
+  Individual* org = popObject->org[popIndex];
+  for (int i = 0; i < numItems; i++) {
+    clusIndex = trackerArray[i][popIndex];
+    if (org->active[clusIndex]) {
+      clusters[clusIndex]->push_back(i);
+    }
+  }//forming clusters
+  double* arr;
+  int activeCount = 0;
+  for (int c = 0; c < maxNumClusters; c++) {
+    if (org->active[c]) {			//prints out the best output
+      activeCount++;
+      trackOff << "-------------------------------------------" << endl;
+      trackOff << "Elements of cluster " << c << " :" << endl;
+      for (vector<int>::size_type i = 0; i != clusters[c]->size(); i++) {
+	int itemIndex = clusters[c]->at(i);
+	arr = itemsArray[itemIndex]->items;
+	for (int f = 0; f < numFeatures; f++) {
+	  trackOff << arr[f] << " ";
+	}
+	trackOff << itemsArray[itemIndex]->typeClass;
+	trackOff << endl;
+      }
+    }
+  }
+  trackOff << "Total number of clusters obtained for index " << popIndex << " is " <<  activeCount << endl;
+}
+
 
 /* This method takes an input two arrays min and max
  * that hold the minimum and maximum value of each attribute
@@ -215,7 +251,18 @@ void DEMain::setup(double min[], double max[]) {
 double DEMain::dist(double* x, double* y) {
   double Sum = 0.0;
   for (int f = 0; f < numFeatures; f++) {
-    Sum = Sum + pow((x[f] - y[f]), 2.0);
+    if(f == 2) {
+      double scaleFactor = 75.41/4.49;
+      Sum = Sum + pow(scaleFactor*(x[f] - y[f]), 2.0);
+    }
+    else if (f ==3 ) {
+      double scaleFactor = 75.41/3.5;
+      Sum = Sum + pow(scaleFactor*(x[f] - y[f]), 2.0);
+    } else {
+      Sum = Sum + pow((x[f] - y[f]), 2.0);
+    }
+      
+
   }
   return sqrt(Sum);
 }
@@ -329,20 +376,20 @@ double DEMain::calcDBIndex(Individual* org) {
 		for (int c2 = c1; c2 < maxNumClusters; c2++) {
 			if (c1 != c2 && org->active[c1] && org->active[c2]) {
 				double temp = avgArr[c1] + avgArr[c2];
-				trackOff << "values of s_i and s_j " << avgArr[c1] << " " << avgArr[c2] << endl;
+				//trackOff << "values of s_i and s_j " << avgArr[c1] << " " << avgArr[c2] << endl;
 				double distanceVal = dist(org->clusCenter[c1], org->clusCenter[c2]);
-				trackOff << "distance between centroid i and j " << distanceVal << endl;
+				//trackOff << "distance between centroid i and j " << distanceVal << endl;
 				temp /=  distanceVal; //finding R =(S_i+S_j)/d_i,j
 				//	temp /= dist(newClustCenters[i], newClustCenters[j]);
 				if (temp > maxValue)
 					maxValue = temp;
 			}
-			trackOff << "Rmax calc " << maxValue << endl;
+			//trackOff << "Rmax calc " << maxValue << endl;
 		}
 		sum += maxValue;		  //finding sum(Rmax)
 	}
 	double avg = sum / org->numActiveClusters;
-	trackOff << "DB index " << avg << endl;
+	//trackOff << "DB index " << avg << endl;
 	if (minDB > avg) {//keeping track of the minimum and maximum DB index encountered for all individuals in all generations
 		minDB = avg;
 	}
@@ -742,20 +789,24 @@ Individual* DEMain::crossover(int orgIndex, double genNum, double min[], double 
   }
   fit = calcFitness(child, orgIndex, false, genNum, min, max);
   child->rawFitness = fit;
-  /*  if(orgIndex == popObject->bestOrgIndex){
+  if(orgIndex == popObject->bestOrgIndex){
     trackOff << "[[[[[[[[[[[Generation " << genNum << " ]]]]]]]]]]]" << endl;
     trackOff << "s1 s2 s3 " << s1<< " " << s2 << " " << s3 << endl;
     trackOff << "[[[[[[[[[[s1]]]]]]]]]]" <<endl;
     trackOff << *(popObject->org[s1]) << endl;
+    printClusters(s1);
     trackOff << "[[[[[[[[[[s2]]]]]]]]]]" <<endl;
     trackOff << *(popObject->org[s2]) << endl;
+    printClusters(s2);
     trackOff << "[[[[[[[[[[s3]]]]]]]]]]" <<endl;
     trackOff << *(popObject->org[s3]) << endl;
+    printClusters(s3);
     trackOff << "[[[[[[[[[[parent]]]]]]]]]]" <<endl;
     trackOff << *(popObject->org[orgIndex]) << endl;
+    printClusters(orgIndex);
     trackOff<< "[[[[[[[[[offspring]]]]]]]]]" << endl;
     trackOff << *child << endl;
-    }*/
+  }
   return child;
 
 }
@@ -854,6 +905,17 @@ void DEMain::report(int bestPopIndex, int worstInd, string filename) {
 			clusters[clusIndex]->push_back(i);
 		}
 	}
+	//original clustering for the data set to compute nmi
+	origClustering = new vector<int>*[numClasses+2];
+	for (int count = 0; count <= numClasses+1; count++) {
+	  origClustering[count] = new vector<int>;
+	}
+	for(int i =0; i < numItems; i++) {
+	  int index = itemsArray[i]->typeClass;
+	  origClustering[index]->push_back(i);
+	}
+	double valNMI = MI(bestPopIndex, 0, true);
+	outputFile << "NMI for best cluster is " << valNMI << endl;
 
 	double* arr;
 	int activeCount = 0;
@@ -874,6 +936,7 @@ void DEMain::report(int bestPopIndex, int worstInd, string filename) {
 		}
 	}
 	outputFile << "Total number of clusters obtained : " << activeCount << endl;
+
 	for (int c = 0; c < maxNumClusters; ++c) {
 		clusters[c]->clear();
 	}
@@ -884,6 +947,8 @@ void DEMain::report(int bestPopIndex, int worstInd, string filename) {
 			clusters[clusIndex]->push_back(i);
 		}
 	}
+	
+
 	outputFile << "-------------------------------------------" << endl;
 	outputFile << "Worst fitness clusters are as follows" << endl;
 	outputFile << endl;
@@ -906,6 +971,8 @@ void DEMain::report(int bestPopIndex, int worstInd, string filename) {
 		}
 	}
 	outputFile << "Total number of clusters obtained : " << activeCount << endl;
+	valNMI = MI(worstInd, 0, true);
+	cout << "NMI for worst cluster is " << valNMI << endl;
 	for (int c = 0; c < maxNumClusters; ++c) {
 		clusters[c]->clear();
 	}
@@ -924,7 +991,8 @@ void DEMain::report(int bestPopIndex, int worstInd, string filename) {
 		assert(min_index != -1);
 		clusters[min_index]->push_back(i);
 	}
-	outputFile << "-------------------------------------------" << endl;
+
+	/*outputFile << "-------------------------------------------" << endl;
 	outputFile << "Worst fitness cluster without tweaking" << endl;
 	for (int c = 0; c < maxNumClusters; c++) {//prints out the worst output w/o making any change like reshuffling or deactivating clusters.
 		if (org->active[c] && !clusters[c]->empty()) {
@@ -943,7 +1011,9 @@ void DEMain::report(int bestPopIndex, int worstInd, string filename) {
 			}
 		}
 	}
-
+	valNMI = MI(clusters, origClustering, worstInd, 0, true);
+	outputFile << "NMI for worst cluster w/o reshuffling is " << valNMI << endl;*/
+	outputFile << "DB index for worst " << 1.0/popObject->org[worstInd]->rawFitness <<endl;
 	if (indexForFitness == 1) {
 		outputFile << "Min DB index is " << minDB << " Max DB index is "
 				<< maxDB << endl;
@@ -956,6 +1026,98 @@ void DEMain::report(int bestPopIndex, int worstInd, string filename) {
 	}
 	outputFile.close();
 	cout << "Result saved in file.";
+
 	delete[] arr;
 }
 
+/*
+ * This method computes the mutual information based scores
+ * It is used to compare our result to the ground truth or to compare two clusters
+ * Returns value b/w [0,1] 0 - purely independent clusters; 1 - same clusters 
+ */
+double DEMain::MI(int popInd1, int popInd2, bool isFinal) {
+  double H1 = 0.0;
+  double H2 = 0.0;
+  double mi = 0.0;
+  double emi = 0.0;
+  double p1, p2, p_12, mi_log;
+  double itemSize = numItems;
+  Individual* org1 = popObject->org[popInd1];
+  double size;
+
+  for (int c1 = 0; c1 < maxNumClusters; c1++) {   
+      if (org1->active[c1]) {
+	sort(clusters[c1]->begin(), clusters[c1]->end());
+	size = clusters[c1]->size();
+	p1 = size / itemSize;
+	cout << "P1 is " << p1 << " ";
+	H1 += p1 * (log10(p1));//H_u = \sum(P(i)log(P(i))) to calc entropy in clustering for 1
+	if(!isFinal) {   
+	  Individual* org2 = popObject->org[popInd2];
+	  for (int c2 = 0; c2 < maxNumClusters; c2++) {
+	    if (org2->active[c2]) {
+	      vector<int> clus3;
+	      sort(clusters[c2]->begin(), origClustering[c2]->end());
+	      set_intersection(clusters[c1]->begin(), clusters[c1]->end(),
+			       origClustering[c2]->begin(), origClustering[c2]->end(),
+			       back_inserter(clus3));
+	      p_12 = clus3.size() / numItems;
+	      p2 = origClustering[c2]->size() / numItems;
+	      mi_log = p_12 / (p1 * p2);	     
+	      mi += p_12 * (log10(mi_log));
+	    }//end if
+	  }//end for c2
+	}//end if isFinal 
+	else{
+	  int it1 = 0, it2 = 1;
+	  for (int c2 = 1; c2 <= numClasses+1; c2++) {
+	    if(c2 != 4) {
+	    vector<int> clus3;
+	    sort(origClustering[c2]->begin(), origClustering[c2]->end());
+	   //clusters[c1]->begin(), clusters[c1]->end(),
+	   //origClustering[c2]->begin(), origClustering[c2]->end(),
+	   //back_inserter(clus3));
+	    double size2 = origClustering[c2]->size(); 
+	    double ctr = 0;
+	    while(it1 < size && it2 < size2) {
+	      if(clusters[c1]->at(it1) == origClustering[c2]->at(it2)){
+		ctr++;
+		it1++; it2++;
+	      }
+	      else if(clusters[c1]->at(it1) > origClustering[c2]->at(it2)) it2++;
+	      else it1++;
+	    }
+	    cout << "ctr " << ctr << endl;
+	    if(ctr != 0) {
+	    p_12 = ctr / itemSize;
+	    cout << "P_12 " << p_12 << endl;
+
+	    p2 = size2 / itemSize;
+	    cout << "P2 is " << p2 << endl;
+	    mi_log = p_12 / (p1 * p2);
+	    cout << "mi_log " << mi_log << endl;
+	    mi += p_12 * (log10(mi_log));      }
+	    }  
+	  }//end for c2
+	}//end else
+      }//end if
+      
+      if (!isFinal && popObject->org[popInd2]->active[c1]) {
+	p2 = origClustering[c1]->size() / numItems;
+	H2 += p2 * (log10(p2));//H_v = \sum(P(j)log(P(j))) to calc entropy in clustering for 2
+      }
+     
+  }//end for
+  if(isFinal){
+    for(int c1 =1; c1 < numClasses+2; c1++) {
+      double size3 = origClustering[c1]->size();
+      p2 = size3 / itemSize;
+      H2 += p2 * (log10(p2));//H_v = \sum(P(j)log(P(j))) to calc entropy in clustering for 2 
+    }
+  }
+  cout << "MI " << mi << " " << " H1 " << H1 << " h2 " << H2 << endl;
+  double nmi = mi/sqrt(H1*H2);
+// double max = (H1>H2) ? H1 : H2;
+// double ami = (mi - emi)/(max - emi);
+  return nmi;
+}

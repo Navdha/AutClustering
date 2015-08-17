@@ -17,8 +17,9 @@ class Parameters {
   int maxNumClusters;
   int minNumClusters;
   int popScaleFactor;
+  int numClasses;
   double gen;
-  Parameters(double CrMaximum, double CrMinimum, double FScaleProb, double threshVal, int maxClusters, int minClusters, int popScale, double numGen);
+  Parameters(double CrMaximum, double CrMinimum, double FScaleProb, double threshVal, int maxClusters, int minClusters, int popScale, double numGen, int numC);
   ~Parameters();
 };
 

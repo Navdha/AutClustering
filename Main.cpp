@@ -38,9 +38,9 @@ int main(int argc, char** argv){
   Item** objects;
   int** track;
   srand(time(NULL));
-  if (argc != 11){
+  if (argc != 12){
     cerr << "Usage: " << argv[0]
-	 << " filename CrMax CrMin scaleFactor thresholdVal maxNumClusters minNumClusters popScalingFactor numGenerations validityIndex"
+	 << " filename CrMax CrMin scaleFactor thresholdVal maxNumClusters minNumClusters popScalingFactor numGenerations validityIndex numOfClasses"
 	 << endl;
     exit(1);
   }
@@ -54,6 +54,7 @@ int main(int argc, char** argv){
   int popScaleFactor = atoi(argv[8]);
   double gen = atoi(argv[9]);
   int validityIndex = atoi(argv[10]);
+  int numClasses = atoi(argv[11]);
 
   char* filename = argv[1];
   // for (int i = 2; i < argc-1; i++) {
@@ -125,7 +126,7 @@ int main(int argc, char** argv){
 			}
 	
 		Parameters param(CrMaximum, CrMinimum, FScaleProb, threshVal,
-				maxNumClusters, minNumClusters, popScaleFactor, gen);
+				 maxNumClusters, minNumClusters, popScaleFactor, gen, numClasses);
 		DEMain obj(numFeatures, track, objects, val, validityIndex, param);
 		obj.calcDistBtwnItems();
 		obj.setup(min, max);
