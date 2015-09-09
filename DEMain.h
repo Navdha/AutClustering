@@ -32,6 +32,7 @@ public:
   DEMain(int dim, int** tracebackArr, Item** items, int itemSize, int validityIndex, Parameters param);
   ~DEMain();
   void setup(double min[],double max[]);
+  void computeClustering(Individual* org, int popIndex, bool isInitial, int genNum, double min[], double max[]);
   double calcFitness(Individual* org, int popIndex, bool isInitial, int genNum, double min[], double max[]);
   double dist(double* x, double* y);
   double* avgDist(Individual* org);
@@ -40,13 +41,16 @@ public:
   void run(double min[], double max[], string filename);
   void report(int orgIndex, int worstOrgInd, string filename);
   void reshuffle(Individual* org, int numTriplesArray, int orgIndex,  bool isInitial);
-  void calcDistBtwnItems();
+  void reshuffleValid(Individual* org,int orgIndex,  bool isInitial, bool isExploitation, int clusIndex);
+  //void reshuffleLocalOpt(Individual* org);
+  void calcDistBtwnItems(double min[], double max[]);
   double calcDBIndex(Individual* org);
   double calcCSIndex(Individual* org);
   double calcPBIndex(Individual* org);
   double calcSD();
   void printClusters(int popIndex);
   double MI(int popInd1, int popInd2, bool isFinal);
+  double randIndex(int popInd1,  bool isARI);
 
   Population* popObject;
   int strategy;
@@ -69,6 +73,7 @@ public:
   bool* ItemUsed;
   bool* ClusFull;
   double* avgArr;
+  double* scalingArr;
   double** newClustCenters;
   double* sumArr;
   int* ItemCounter;

@@ -128,7 +128,7 @@ int main(int argc, char** argv){
 		Parameters param(CrMaximum, CrMinimum, FScaleProb, threshVal,
 				 maxNumClusters, minNumClusters, popScaleFactor, gen, numClasses);
 		DEMain obj(numFeatures, track, objects, val, validityIndex, param);
-		obj.calcDistBtwnItems();
+		obj.calcDistBtwnItems(min, max);
 		obj.setup(min, max);
 		obj.run(min, max, resultFileName);
 	}
