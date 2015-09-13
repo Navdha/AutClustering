@@ -59,25 +59,18 @@ Heap::~Heap()
      delete[] elements;
 }
 
-
 void Heap::ReheapDown(int root, int bottom)
 {
      int minChild;
      int rightChild;
      int leftChild;
      HeapItem temp;
-
      leftChild = root * 2 + 1;          // Get index of root's left child
      rightChild = root * 2 + 2;          // Get index of root's right child
-
-     // Check base case in recursive calls.  If leftChild's index is less
-     // than or equal to the bottom index we have not finished recursively 
-     // reheaping.
-     if(leftChild <= bottom)               
+     while(leftChild <= bottom)               
      {
-       if(leftChild == bottom)          // If this root has no right child then       {
-	 minChild = leftChild;     //     leftChild must hold min key
-     
+       if(leftChild == bottom)          // If this root has no right child then      	 
+	   minChild = leftChild;     //     leftChild must hold min key     
        else
 	 {     // Get the one lowest in the tree (highest index in the array)
 	   if(elements[leftChild].getKey() >= elements[rightChild].getKey())
@@ -91,12 +84,18 @@ void Heap::ReheapDown(int root, int bottom)
 	   temp = elements[root];
 	   elements[root] = elements[minChild];
 	   elements[minChild] = temp;
+	   root = minChild;
 	   // Make recursive call till reheaping completed
-	   ReheapDown(minChild, bottom);
+	   //ReheapDown(minChild, bottom);
+	   leftChild = root * 2 + 1;          // Get index of root's left child
+	   rightChild = root * 2 + 2;          // Get index of root's right child
+	 }
+       else{
+	 break;
        }
+      
      }
 }
-
 
 
 void Heap::ReheapUp(int root, int bottom)
@@ -106,20 +105,42 @@ void Heap::ReheapUp(int root, int bottom)
 
      // Check base case in recursive calls.  If bottom's index is greater
      // than the root index we have not finished recursively reheaping.
-     if(bottom > root)
+     while(bottom >root)
      {
-          parent = (bottom -1) / 2;
-          if(elements[parent].getKey() > elements[bottom].getKey())
-          {
-               // Swap these two elements
-               temp = elements[parent];
-               elements[parent] = elements[bottom];
-               elements[bottom] = temp;
-               // Make recursive call till reheaping completed
-               ReheapUp(root, parent);
-          }
+       parent = (bottom -1) / 2;
+       if(elements[parent].getKey() > elements[bottom].getKey()){
+       // Swap these two elements
+	 temp = elements[parent];
+	 elements[parent] = elements[bottom];
+	 elements[bottom] = temp;
+	 bottom = parent; 
+       }
+       else 
+	 break;
      }
 }
+
+//void Heap::ReheapUp(int root, int bottom)
+//{
+//     int parent;
+//     HeapItem temp;
+//
+//     // Check base case in recursive calls.  If bottom's index is greater
+//     // than the root index we have not finished recursively reheaping.
+//     if(bottom > root)
+//     {
+//          parent = (bottom -1) / 2;
+//          if(elements[parent].getKey() > elements[bottom].getKey())
+//          {
+//               // Swap these two elements
+//               temp = elements[parent];
+//               elements[parent] = elements[bottom];
+//               elements[bottom] = temp;
+//               // Make recursive call till reheaping completed
+//               ReheapUp(root, parent);
+//          }
+//     }
+//}
 
 // Add an item to the heap
 
