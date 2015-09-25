@@ -72,10 +72,9 @@ int main(int argc, char** argv){
   int validityIndex = atoi(argv[10]);
   int numClasses = atoi(argv[11]);
   int numRepeat = atoi(argv[12]);
-  string str = get_date();
-  char *cstr = new char[str.length() + 1];
-  strcpy(cstr, str.c_str());
-  
+  string s = get_date();
+  char *cstr = new char[s.length() + 1];
+  strcpy(cstr, s.c_str());
   char* filename = argv[1];
   // for (int i = 2; i < argc-1; i++) {
     strcat(filename, "_");
