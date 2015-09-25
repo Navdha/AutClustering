@@ -75,10 +75,11 @@ int main(int argc, char** argv){
   string s = get_date();
   char *cstr = new char[s.length() + 1];
   strcpy(cstr, s.c_str());
+  cout << cstr << endl;
   char* filename = argv[1];
   // for (int i = 2; i < argc-1; i++) {
     strcat(filename, "_");
-    strcat(cstr, "_");
+    strcat(filename, cstr);
     //   strcat(filename, argv[4]);
     //}
   if (validityIndex == 1) {
@@ -140,7 +141,7 @@ int main(int argc, char** argv){
 			for(int i = 0; i < numFeatures; i++){
 			cout << max[i] << " ";
 			}
-	
+			cout << endl;
 		Parameters param(CrMaximum, CrMinimum, FScaleProb, threshVal,
 				 maxNumClusters, minNumClusters, popScaleFactor, gen, numClasses, numRepeat);
 		DEMain obj(numFeatures, objects, val, validityIndex, param);

@@ -40,6 +40,7 @@ Individual::Individual(const Individual& org){
     clusCenter[count] = new double[numFeatures];
     activationThreshold[count] = org.activationThreshold[count];
     active[count] = org.active[count];
+    clusters[count] = new vector<int>;
     clusters[count] = org.clusters[count];
     for(int i = 0; i < numFeatures; i++){
       clusCenter[count][i] = org.clusCenter[count][i];

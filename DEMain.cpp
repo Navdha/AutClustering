@@ -49,12 +49,11 @@ double maxPB= std::numeric_limits<double>::min();
 double avgDB = 0.0;
 double avgCS = 0.0;
 double avgPB = 0.0;
-int* baseArray;
 int* permuteArray;
 vector<int>** origClustering;
 ofstream trackFile;
 ofstream trackOff;
-int currentGen = 0;
+int lastUpdatedGen = 0;
 double origScale;
 int minimumClusSize = 2;
 
@@ -99,10 +98,9 @@ DEMain::DEMain(int dim, Item** items, int itemSize, int validityIndex, Parameter
   activationThreshold = param.threshold; //threshold value to activate a cluster's centroid
   indexForFitness = validityIndex; //which clustering validity index used
   itemsArray = items; //data structure to hold all items
-  baseArray = new int[popSize];
   permuteArray = new int[popSize];
   for(int i = 0; i < popSize; i++){
-    baseArray[i]=i;
+    permuteArray[i]=i;
   }
   //clusters = new vector<int>*[maxNumClusters]; //holds actual clusters for every pop members(calcFitness)
   distItem = new double*[numItems]; //jagged array storing dist between all items(used for calcCSIndex and calcPBIndex)
@@ -150,31 +148,22 @@ DEMain::~DEMain() {
   delete [] ItemCounter;
   delete [] isReplaceOrg;
   delete [] newClustCenters;
-  delete [] baseArray;
+  delete [] permuteArray;
 }
 
 //permute base vectors
 void DEMain:: permuteBaseArray(){
-  int counter = 0;
-  int psize = popSize;
   int rand, temp;
-  bool repeat = true;
-  for(int i = 0; i < popSize; i++){
-    permuteArray[i]=-1;
+  for( int p = 0; p < popSize; p++){
+    rand = uniformInRange(0, (popSize - p -1));
+    temp = permuteArray[p];
+    permuteArray[p] = permuteArray[p+rand];
+    permuteArray[p+rand] = temp;
   }
-  while(counter < popSize){
-    while(repeat){
-      rand = uniformInRange(0, psize -1);
-      if(rand != counter) repeat = false;
-    }
-    permuteArray[counter] = baseArray[rand];
-    //swap last index value with rand's value and reduce size of array being searched
-    temp = baseArray[psize - 1];
-    baseArray[psize-1] = baseArray[rand];
-    baseArray[rand] = temp;
-    psize -= 1;
-    counter++;
+  for( int p = 0; p < popSize; p++){
+    //cout << permuteArray[p] << " ";
   }
+  //cout<< endl;
 }
 
 /*
@@ -568,8 +557,7 @@ void DEMain:: cleanIndividual(Individual* org, double min[], double max[]) {
 }
 
 /*
- * Input parameters : Pointer to chromosome, index of population's chromosome,
- * bool parameter to know whether function called during initial setup or during DE
+ * Input parameters : Pointer to chromosome
  * This method computes the clustering of a chromosome and then calls the fitness function inside
  * return  type : double; returns the fitness computed
  */
@@ -577,6 +565,9 @@ void DEMain::computeClustering(Individual* org) {
   int min_index = -1;
   double temp_dist = 0;
   int itemIndex = 0;
+  for(int c = 0; c <maxNumClusters; c++){
+    org->clusters[c]->clear();  
+  }
   while (itemIndex < numItems) { //form clusters
     min_index = -1;
     double min = numeric_limits<double>::max();
@@ -614,7 +605,7 @@ Individual* DEMain::replacement(Individual* org, double min[], double max[]) {
     objClus[c].clusIndex = c;
   }
   qsort(objClus, maxNumClusters, sizeof(ClusterSort), compareSize);
-  if (objClus[0].size > 0.4 * numItems && org->numActiveClusters != maxNumClusters) {
+  if (objClus[0].size > 0.4 * numItems) {
     //create copy of original individual
     Individual* orgDup = new Individual(*org);
     centroidAddition(orgDup, objClus);
@@ -622,13 +613,13 @@ Individual* DEMain::replacement(Individual* org, double min[], double max[]) {
     cleanIndividual(orgDup, min, max);
     double newFitness = calcDBIndex(orgDup);
     orgDup->rawFitness = newFitness;
-    //cout << "new fit " << newFitness << " old fit " << defaultFit << endl;
+    ////cout << "new fit " << newFitness << " old fit " << defaultFit << endl;
     if (newFitness > defaultFit) {
       //delete org;
       return orgDup;
     }
     else {
-      delete orgDup;
+      //      delete orgDup;
       return org;
     }
   }
@@ -656,7 +647,7 @@ void DEMain::centroidAddition(Individual* org, ClusterSort* objClus) {
   }
   sdSum /= objClus[0].size;
   sdSum = sqrt(sdSum);
-  // cout << "avg dist " << avgDistCal << " sdSum " << sdSum << endl;
+  // //cout << "avg dist " << avgDistCal << " sdSum " << sdSum << endl;
   double newScale;
   //need to check if the centroid is too close or far from the larger cluster
   if ((maxDist / 2) < (avgDistCal + sdSum)) {
@@ -671,18 +662,18 @@ void DEMain::centroidAddition(Individual* org, ClusterSort* objClus) {
   for (int f = 0; f < numFeatures; f++) {
     newCentroid[f] = org->clusCenter[objClus[0].clusIndex][f] + newScale*(org->clusCenter[objClus[1].clusIndex][f]- org->clusCenter[objClus[0].clusIndex][f]);
     //      midCentroid[f] = (org->clusCenter[objClus[1].clusIndex][f] + org->clusCenter[objClus[0].clusIndex][f])/2;
-    //      cout << "new centroid " << newCentroid[f] << " ";
+    //      //cout << "new centroid " << newCentroid[f] << " ";
   }
-  //    cout << endl;
+  //    //cout << endl;
   double min = numeric_limits<double>::max();
   int minIndex = -1;
-  //    cout << "active centroids " << org->numActiveClusters << endl;
+  //    //cout << "active centroids " << org->numActiveClusters << endl;
   for (int c = 0; c < maxNumClusters; c++) {
     if (org->active[c] == false) {
-      //	cout << "false" << endl;
+      //	//cout << "false" << endl;
       //find index of centroid that's closest to new centroid
       double tempDist = dist(org->clusCenter[c], newCentroid);
-      //	cout << "temp dist after finding centroid " << tempDist << endl;
+      //	//cout << "temp dist after finding centroid " << tempDist << endl;
       if (tempDist < min) {
 	min = tempDist;
 	minIndex = c;
@@ -736,9 +727,7 @@ double DEMain::calcFitness(Individual* org) {
  */
 
 void DEMain::selectSamples(int orgIndex, int &s1, int &s2, int &s3) { // finding unique indexes to perform crossover
-  //  do {
-  //    s1 = uniformInRange(0, popSize-1);
-  //  } while (s1 == orgIndex);
+  //change to: random displacement with wraparound
   s1 = permuteArray[orgIndex];
   do {
     s2 = uniformInRange(0, popSize-1);
@@ -756,22 +745,23 @@ void DEMain::selectSamples(int orgIndex, int &s1, int &s2, int &s3) { // finding
  * returns pointer to offspring created
  */
 Individual* DEMain::crossover(int orgIndex, double genNum, double min[], double max[]) {
-  double fit = 0.0;
-  double f_scale,d;
+  double featureFScale,d;
+  double thresFScale = 0.5;
   int s1, s2, s3;
   bool isExploration = true;
   if(genNum >= 0.9*numGenerations){
     isExploration = false;
   }
   double crossoverProb = crossoverProbability * ((numGenerations - genNum) / numGenerations);//based on formula in paper
-  if(genNum == currentGen+100){
+  int epoch = numGenerations/6;
+  if(genNum == lastUpdatedGen+epoch){
     scale -= 0.1;
-    currentGen = genNum;
-    //     cout << scale << " and gen " << genNum << endl;
+    lastUpdatedGen = genNum;
+    //     //cout << scale << " and gen " << genNum << endl;
   }
   if(isExploration) {
     d = 0.5;
-    f_scale = scale + (d*(uniform01() - 0.5)); //based on formula in paper
+    featureFScale = scale + (d*(uniform01() - 0.5)); //based on formula in paper
   }
   else { 
     d = 0.001;
@@ -779,13 +769,14 @@ Individual* DEMain::crossover(int orgIndex, double genNum, double min[], double 
   }//need to discuss
 
   selectSamples(orgIndex, s1, s2, s3);//to get unique individuals to perform DE crossover on
+  //cout << "selectSamples finished" << endl;
   Individual* child = new Individual(maxNumClusters, numFeatures);
   int counterActiveClus = 0;//keeps track of active cluster centers
   for (int c = 0; c < maxNumClusters; c++) {
     bool change = uniform01() < crossoverProb? true : false;
     if(uniform01() < crossoverProb){
       child->activationThreshold[c] =  popObject->org[s1]->activationThreshold[c] +
-	f_scale*(popObject->org[s2]->activationThreshold[c] -  popObject->org[s3]->activationThreshold[c]);    
+	thresFScale*(popObject->org[s2]->activationThreshold[c] -  popObject->org[s3]->activationThreshold[c]);    
     }
     else{
       child->activationThreshold[c] =  popObject->org[orgIndex]->activationThreshold[c];               
@@ -794,18 +785,18 @@ Individual* DEMain::crossover(int orgIndex, double genNum, double min[], double 
       assert(popObject->org[orgIndex] != NULL);
       //jitter
       if(!isExploration) { 
-	f_scale = scale + (d*(uniform01() - 0.5));
+	featureFScale = scale + (d*(uniform01() - 0.5));
       }
       if(change) {
 	child->clusCenter[c][f] = popObject->org[s1]->clusCenter[c][f]
-	  + f_scale*(popObject->org[s2]->clusCenter[c][f]- popObject->org[s3]->clusCenter[c][f]);
+	  + featureFScale*(popObject->org[s2]->clusCenter[c][f]- popObject->org[s3]->clusCenter[c][f]);
 	if (child->clusCenter[c][f] < min[f]) {
 	  child->clusCenter[c][f] =  popObject->org[s1]->clusCenter[c][f]
-	    + abs( f_scale*(popObject->org[s2]->clusCenter[c][f]- popObject->org[s3]->clusCenter[c][f]) );
+	    + abs( featureFScale*(popObject->org[s2]->clusCenter[c][f]- popObject->org[s3]->clusCenter[c][f]) );
 	}
 	else if (child->clusCenter[c][f] > max[f]){//if a feature for cluster center computed goes out of its bounds, assign it a random value
 	  child->clusCenter[c][f] =  popObject->org[s1]->clusCenter[c][f]
-	    - abs( f_scale*(popObject->org[s2]->clusCenter[c][f]- popObject->org[s3]->clusCenter[c][f]));
+	    - abs( featureFScale*(popObject->org[s2]->clusCenter[c][f]- popObject->org[s3]->clusCenter[c][f]));
 	}
       } else {	
 	child->clusCenter[c][f] = popObject->org[orgIndex]->clusCenter[c][f];
@@ -830,7 +821,7 @@ Individual* DEMain::crossover(int orgIndex, double genNum, double min[], double 
     int num = child->numActiveClusters;
     // int randNumClusters = uniformInRange(1, maxNumClusters/2);
     // while(num < randNumClusters) {
-    while (num < minNumClusters) {
+    while (num < minNumClusters) {//we don't want to activate too many centroids because we want the threshold to kick in
       int i = uniformInRange(0, maxNumClusters - 1);
       if(!child->active[i]){
 	child->activationThreshold[i] = uniformInRange(activationThreshold, 1.0);
@@ -849,7 +840,7 @@ Individual* DEMain::crossover(int orgIndex, double genNum, double min[], double 
  */
 void DEMain::restart(){
   scale = origScale;
-  currentGen = 0;
+  lastUpdatedGen = 0;
   minimumClusSize = 2;
 }
 
@@ -899,36 +890,25 @@ void DEMain::initializePopCycle(Individual* temp, double min[], double max[]){
  */
 void DEMain::perturbPop(int cycle, double min[], double max[]){
   restart();
-  double fitn = 0.0;
   if(cycle > 0 && cycle < 0.4*numRepeat){
     //currently replacing a small portion of population irrespective of avg/best
     //replace 20% of population randomly
-    int repl = 0;
-    while(repl < 0.2*popSize){
-      int indexRepl = uniformInRange(0,popSize-1);
+    for(int repl = 0; repl < 0.2*popSize; repl++){
+      int indexRepl = permuteArray[repl];
       if(indexRepl != popObject->bestOrgIndex){
-	//create new offspring and replace
-	Individual* temp = new Individual(maxNumClusters, numFeatures); //instantiating new individual
-	initializePopCycle(temp, min, max);
-	delete popObject->org[indexRepl];//could archive these
-	popObject->org[indexRepl] = temp;
-	repl++;
+	//modify individual
+	initializePopCycle(popObject->org[indexRepl], min, max);
       }      
     }
   }
   else if(cycle >= 0.4*numRepeat && cycle < 0.9*numRepeat){
     //currently replacing a small portion of population irrespective of avg/best
     //replace 10% of population randomly
-    int repl =0;
-    while(repl < 0.1*popSize){
-      int indexRepl = uniformInRange(0,popSize-1);
+    for(int repl = 0; repl < 0.1*popSize; repl++){
+      int indexRepl = permuteArray[repl];
       if(indexRepl != popObject->bestOrgIndex){
-	//create new offspring and replace
-	Individual* temp = new Individual(maxNumClusters, numFeatures); //instantiating new individual
-	initializePopCycle(temp, min, max);
-	delete popObject->org[indexRepl];
-	popObject->org[indexRepl] = temp;
-	repl++;
+	//modify individual
+	initializePopCycle(popObject->org[indexRepl], min, max);
       }
       
     }
@@ -936,16 +916,11 @@ void DEMain::perturbPop(int cycle, double min[], double max[]){
   else if(cycle >= 0.9*numRepeat && cycle < numRepeat){
     //replace fewer elements from population
     //no changes in the last cycle
-    int repl =0;
-    while(repl < 0.05*popSize){
-      int indexRepl = uniformInRange(0,popSize-1);
+    for(int repl = 0; repl < 0.05*popSize; repl++){
+      int indexRepl = permuteArray[repl];
       if(indexRepl != popObject->bestOrgIndex){
-	//create new offspring and replace
-	Individual* temp = new Individual(maxNumClusters, numFeatures); //instantiating new individual
-	initializePopCycle(temp, min, max);
-	delete popObject->org[indexRepl];
-	popObject->org[indexRepl] = temp;
-	repl++;
+	//modify individual
+	initializePopCycle(popObject->org[indexRepl], min, max);
       }//end if 
     }//end while
   }//end else if
@@ -967,6 +942,7 @@ void DEMain::run(double min[], double max[], string filename) {
     for(int cycle = 0; cycle < numRepeat; cycle++){
       while (g < numGenerations) {    //till max generation reached
 	permuteBaseArray();
+	//cout << "permute finished" << endl;
 	minDB = numeric_limits<double>::max();
 	maxDB = numeric_limits<double>::min();
 	/* minCS = numeric_limits<double>::max();
@@ -978,7 +954,9 @@ void DEMain::run(double min[], double max[], string filename) {
 	for (int p = 0; p < popSize; p++) {
 	  Individual *child, *offspring;
 	  child = crossover(p, g, min, max); //generate an offspring my performing DE crossover
+	  //cout << "crossover finished" << endl;
 	  offspring = replacement(child, min, max);
+	  //cout << "replacement finished" << endl;
 	  double avg;
 	  if (popObject->org[p]->rawFitness <= offspring->rawFitness) { //if offspring better than parent, replace the parent
 	    isReplaceOrg[p] = true;
@@ -1029,9 +1007,9 @@ void DEMain::run(double min[], double max[], string filename) {
       g=0;
       perturbPop(cycle,min,max);
     }
-    cout << endl;
-    //cout << "Out of bounds " << countOOB << endl;
-    cout << "Stopped at generation " << g << endl;
+    //cout << endl;
+    ////cout << "Out of bounds " << countOOB << endl;
+    //cout << "Stopped at generation " << g << endl;
     //find worst chromosome
     int worstInd = 0;
     fitness = popObject->org[0]->rawFitness;
@@ -1070,7 +1048,7 @@ void DEMain::report(int bestPopIndex, int worstInd, string filename) {
   outputFile << "------------------------------------------------" << endl;
   outputFile << endl;
   outputFile << "The final clusters obtained are:" << endl;
-  centroids << "Centroids for best cluster obtained are : " << endl;
+  centroids << "Centroids for best individual obtained are : " << endl;
   int clusIndex = -1;
 
   int* clusClass = new int[numClasses+1];
@@ -1170,7 +1148,7 @@ void DEMain::report(int bestPopIndex, int worstInd, string filename) {
 	       << maxPB << endl;
   }
   outputFile.close();
-  cout << "Result saved in file.";
+  //cout << "Result saved in file.";
 
   delete[] arr;
 }
@@ -1196,7 +1174,7 @@ double DEMain::MI(int popInd1, int popInd2, bool isFinal) {
       sort(org1->clusters[c1]->begin(), org1->clusters[c1]->end());
       size = org1->clusters[c1]->size();
       p1 = size / itemSize;
-      //	cout << "P1 is " << p1 << " ";
+      //	//cout << "P1 is " << p1 << " ";
       H1 += p1 * (log2(p1));//H_u = \sum(P(i)log(P(i))) to calc entropy in clustering for 1
       if(!isFinal) {   
 	isSorted = new bool[maxNumClusters]();
@@ -1266,7 +1244,7 @@ double DEMain::MI(int popInd1, int popInd2, bool isFinal) {
 	H2 += p2 * (log2(p2));//H_v = \sum(P(j)log(P(j))) to calc entropy in clustering for 2 
     }
   }
-  cout << "MI " << mi << " " << " H1 " << H1 << " h2 " << H2 << endl;
+  //cout << "MI " << mi << " " << " H1 " << H1 << " h2 " << H2 << endl;
   double nmi = mi/sqrt(H1*H2);
   // double max = (H1>H2) ? H1 : H2;
   // double ami = (mi - emi)/(max - emi);
