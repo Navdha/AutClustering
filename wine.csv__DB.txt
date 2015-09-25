@@ -1,0 +1,67 @@
+Parameters used to train this dataset were :
+------------------------------------------------
+Scale Factor : 0.8
+Crossover probability : 1
+Maximum generations : 500
+Population scaling factor : 10
+Activation Threshold : 0.5
+Number of cycles : 2
+------------------------------------------------
+
+The final clusters obtained are:
+NMI for best cluster is -nan
+Elements of cluster 2 :
+Total # of items in cluster 0
+Elements of cluster 11 :
+Total # of items in cluster 107
+Class 1 : 31 number of items
+Class 2 : 60 number of items
+Class 3 : 16 number of items
+Total number of clusters obtained : 2
+-------------------------------------------
+Worst fitness clusters are as follows
+
+Elements of cluster 1 :
+Total # of items in cluster 13
+Class 1 : 12 number of items
+Class 3 : 1 number of items
+Elements of cluster 3 :
+Total # of items in cluster 22
+Class 1 : 3 number of items
+Class 2 : 9 number of items
+Class 3 : 10 number of items
+Elements of cluster 4 :
+Total # of items in cluster 74
+Class 1 : 21 number of items
+Class 2 : 40 number of items
+Class 3 : 13 number of items
+Elements of cluster 6 :
+Total # of items in cluster 15
+Class 2 : 7 number of items
+Class 3 : 8 number of items
+Elements of cluster 8 :
+Total # of items in cluster 6
+Class 1 : 6 number of items
+Elements of cluster 9 :
+Total # of items in cluster 2
+Class 2 : 2 number of items
+Elements of cluster 10 :
+Total # of items in cluster 13
+Class 1 : 11 number of items
+Class 3 : 2 number of items
+Elements of cluster 11 :
+Total # of items in cluster 10
+Class 2 : 9 number of items
+Class 3 : 1 number of items
+Elements of cluster 12 :
+Total # of items in cluster 16
+Class 1 : 6 number of items
+Class 2 : 4 number of items
+Class 3 : 6 number of items
+Elements of cluster 14 :
+Total # of items in cluster 7
+Class 3 : 7 number of items
+Total number of clusters obtained : 10
+NMI for worst cluster is 0.0248702
+DB index for worst 0.017903
+Min DB index is 0 Max DB index is 2.22507e-308

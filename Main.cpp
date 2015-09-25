@@ -32,15 +32,31 @@ string exec(const char* cmd) {
   return result;
 }
 
+string get_date()
+{
+  time_t now;
+  char the_date[80];
+  the_date[0] = '\0';
+
+  now = time(0);
+
+  if (now != -1)
+    {
+      strftime(the_date, 80, "%d_%m_%Y.%X", localtime(&now));
+    }
+
+  return string(the_date);
+}
+
 int main(int argc, char** argv){
   string ip_file, ip, lines, numCommas, buffer, item;
   int val, dim, counter = 0;
   Item** objects;
   int** track;
   srand(time(NULL));
-  if (argc != 12){
+  if (argc != 13){
     cerr << "Usage: " << argv[0]
-	 << " filename CrMax CrMin scaleFactor thresholdVal maxNumClusters minNumClusters popScalingFactor numGenerations validityIndex numOfClasses"
+	 << " filename CrMax CrMin scaleFactor thresholdVal maxNumClusters minNumClusters popScalingFactor numGenerations validityIndex numOfClasses cycleRepetition"
 	 << endl;
     exit(1);
   }
@@ -55,11 +71,16 @@ int main(int argc, char** argv){
   double gen = atoi(argv[9]);
   int validityIndex = atoi(argv[10]);
   int numClasses = atoi(argv[11]);
-
+  int numRepeat = atoi(argv[12]);
+  string str = get_date();
+  char *cstr = new char[str.length() + 1];
+  strcpy(cstr, str.c_str());
+  
   char* filename = argv[1];
   // for (int i = 2; i < argc-1; i++) {
     strcat(filename, "_");
-    strcat(filename, argv[4]);
+    strcat(cstr, "_");
+    //   strcat(filename, argv[4]);
     //}
   if (validityIndex == 1) {
     strcat(filename, "_DB");
@@ -70,7 +91,7 @@ int main(int argc, char** argv){
   }
   strcat(filename, ".txt");
   string resultFileName(filename);
-
+  delete [] cstr;
   ip = "wc -l " + ip_file; // find the number of lines in csv file that determines the number of items to cluster.
   lines = exec(ip.c_str());
   if(!lines.empty()){
@@ -92,10 +113,6 @@ int main(int argc, char** argv){
 			max[i] = std::numeric_limits<double>::min();
 		}
 		objects = new Item*[val];
-		track = new int*[val];
-		for (int i = 0; i < val; i++) {
-			track[i] = new int[popSize];
-		}
 		ifstream input_stream(ip_file.c_str());
 		while (getline(input_stream, buffer, '\n')) {
 			istringstream in(buffer);
@@ -126,8 +143,8 @@ int main(int argc, char** argv){
 			}
 	
 		Parameters param(CrMaximum, CrMinimum, FScaleProb, threshVal,
-				 maxNumClusters, minNumClusters, popScaleFactor, gen, numClasses);
-		DEMain obj(numFeatures, track, objects, val, validityIndex, param);
+				 maxNumClusters, minNumClusters, popScaleFactor, gen, numClasses, numRepeat);
+		DEMain obj(numFeatures, objects, val, validityIndex, param);
 		obj.calcDistBtwnItems(min, max);
 		obj.setup(min, max);
 		obj.run(min, max, resultFileName);

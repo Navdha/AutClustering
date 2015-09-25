@@ -24,7 +24,7 @@ class Individual {
   int numActiveClusters; // number of active clusters
   int maxNumClusters;          // maximum number of clusters
   int numFeatures;  // number of features
-  //vector<int>** clusters;
+  vector<int>** clusters;
 
 
   friend ostream& operator<<(ostream& o, const Individual& org);

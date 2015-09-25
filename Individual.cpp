@@ -15,11 +15,11 @@ Individual::Individual(int kmax, int dim) {
   maxNumClusters = kmax;
   numFeatures = dim;
   clusCenter = new double* [maxNumClusters];
-  //clusters = new vector<int>*[k];
+  clusters = new vector<int>*[maxNumClusters];
   for (int count = 0; count < maxNumClusters; count++)
     {
       clusCenter[count] = new double[numFeatures];
-      // clusters[count] = new vector<int>;
+      clusters[count] = new vector<int>;
     }
   activationThreshold =  new double[maxNumClusters];
   active = new bool[maxNumClusters];
@@ -33,12 +33,14 @@ Individual::Individual(const Individual& org){
   numFeatures = org.numFeatures;
   clusCenter = new double*[maxNumClusters];
   activationThreshold = new double[maxNumClusters];
+  clusters = new vector<int>*[maxNumClusters];
   active = new bool[maxNumClusters];
   numActiveClusters = org.numActiveClusters;
   for(int count = 0; count < maxNumClusters; count++){
     clusCenter[count] = new double[numFeatures];
     activationThreshold[count] = org.activationThreshold[count];
     active[count] = org.active[count];
+    clusters[count] = org.clusters[count];
     for(int i = 0; i < numFeatures; i++){
       clusCenter[count][i] = org.clusCenter[count][i];
     }
@@ -67,12 +69,12 @@ Individual::~Individual() {
   //cout << "Destructor called" << endl;
   for(int i = 0; i < maxNumClusters; ++i) {
     delete [] clusCenter[i];
-    // delete clusters[i];
+    delete clusters[i];
   }
   delete [] clusCenter;
   delete [] active;
   delete [] activationThreshold;
-  //	delete [] clusters;
+  delete [] clusters;
 
 }
 
