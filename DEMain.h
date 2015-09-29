@@ -60,6 +60,9 @@ public:
   void initializePopCycle(Individual* temp, double min[], double max[]);
   double MI(int popInd1, int popInd2, bool isFinal);
   double randIndex(int popInd1,  bool isARI);
+  void printClusters(Individual* org);
+  bool validityCheck(Individual* org);
+  void centroidInsertion(Individual* org, int c1, int c2);
 
   Population* popObject;
   int strategy;
