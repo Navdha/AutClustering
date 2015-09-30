@@ -20,7 +20,9 @@ class Parameters {
   int numClasses;
   int numRepeat;
   double gen;
+  Parameters();
   Parameters(double CrMaximum, double CrMinimum, double FScaleProb, double threshVal, int maxClusters, int minClusters, int popScale, double numGen, int numC, int numR);
+  Parameters& operator=(Parameters& obj);
   ~Parameters();
 };
 

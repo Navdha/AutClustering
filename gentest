@@ -1,0 +1,9 @@
+#!/bin/csh
+# Usage: gentest parameter-file num-test-cases(i.e., num columns)
+
+ @ numTestCases = $argv[2]
+ @ i = 1
+while ($i <= $numTestCases)
+    echo "./a.out " `cat $argv[1] | tr "\t" " " | tr -s " " | cut -d" " -f$i` >> testscript.txt
+    @ i++
+end

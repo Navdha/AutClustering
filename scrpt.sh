@@ -5,4 +5,4 @@ for((c=1;c<="$1";c++))
 do 
 eval "$line"
 done
-done<coms.txt;
+done<testscript.txt;

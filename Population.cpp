@@ -37,7 +37,7 @@ ostream& operator<<(ostream& o, const Population& pop)
 
 Population::~Population() {
   // TODO Auto-generated destructor stub
-  //cout << "Pop destructor" << endl;
+  cout << "Pop destructor" << endl;
   for (int i = 0; i < popSize; i++)
     delete org[i];
 

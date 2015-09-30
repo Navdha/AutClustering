@@ -131,27 +131,27 @@ DEMain::DEMain(int dim, Item** items, int itemSize, int validityIndex, Parameter
 DEMain::~DEMain() {
   // TODO Auto-generated destructor stub
   //	 delete popObject;
-  for (int i = 0; i < numItems; i++){
-    delete [] itemsArray[i];
-    delete [] distItem[i];
-  }
-  for(int i = 0; i < maxNumClusters; ++i) {
-    //delete clusters[i];
-    delete newClustCenters[i];
-  }
-  delete [] itemsArray;
-  delete [] distItem;
-  // delete [] clusters;
-  delete [] nearestNeighborTriples;
-  delete [] ItemUsed;
-  delete [] ClusFull;
-  delete [] avgArr;
-  delete [] scalingArr;
-  delete [] sumArr;
-  delete [] ItemCounter;
-  delete [] isReplaceOrg;
-  delete [] newClustCenters;
-  delete [] permuteArray;
+ // for (int i = 0; i < numItems; i++){
+ //   delete [] itemsArray[i];
+ //   delete [] distItem[i];
+ // }
+ // for(int i = 0; i < maxNumClusters; ++i) {
+ //   //delete clusters[i];
+ //   delete newClustCenters[i];
+ // }
+ // delete [] itemsArray;
+ // delete [] distItem;
+ // // delete [] clusters;
+ // delete [] nearestNeighborTriples;
+ // delete [] ItemUsed;
+ // delete [] ClusFull;
+ // delete [] avgArr;
+ // delete [] scalingArr;
+ // delete [] sumArr;
+ // delete [] ItemCounter;
+ // delete [] isReplaceOrg;
+ // delete [] newClustCenters;
+ // delete [] permuteArray;
 }
 
 //generating a permuted array for selection of base donor
@@ -572,8 +572,8 @@ void DEMain:: cleanIndividual(Individual* org, double min[], double max[]) {
 	  double gap = max[f] - min[f];
 	  if (org->clusCenter[c][f] >= min[f] && org->clusCenter[c][f] <= (min[f] + 0.1 * gap)) {
 	    org->clusCenter[c][f] = uniformInRange((min[f]+0.1*gap), (min[f] + (0.5 * gap)));//check if 1.5*min[f] < max[f]
-	  } else if (org->clusCenter[c][f] <= max[f] && org->clusCenter[c][f] >= (max[f] - 0.1 * gap)) {
-	    org->clusCenter[c][f] = uniformInRange((max[f] - (0.5 * gap)), (max[f]-0.1*gap));
+	  } else if (org->clusCenter[c][f] <= max[f] && org->clusCenter[c][f] >= (max[f] - (0.1 * gap))) {
+	    org->clusCenter[c][f] = uniformInRange((max[f] - (0.5 * gap)), (max[f]-(0.1*gap)));
 	  }
 	}//end for
 	if (!org->clusters[c]->empty()) {
@@ -670,7 +670,6 @@ Individual* DEMain::replacement(Individual* org, double min[], double max[]) {
       trackFile << "////////////////////////////////////////////////////" << endl;
       printClusters(orgDup);
     }
-    ////cout << "new fit " << newFitness << " old fit " << defaultFit << endl;
     if (newFitness > defaultFit) {
       delete org;
       return orgDup;
@@ -716,6 +715,7 @@ void DEMain::centroidInsertion(Individual* org, int c1, int c2) {
   }
   sdSum2 /= org->clusters[c2]->size();
   sdSum2 = sqrt(sdSum2);
+  //cout << avgDistCal1 << " " << avgDistCal2 << " " << sdSum1 << " " << sdSum2 << endl;
   double newScale, newScale1, newScale2;
   double* newCentroid = new double[numFeatures];
   double* newCentroid1 = new double[numFeatures];
@@ -730,35 +730,37 @@ void DEMain::centroidInsertion(Individual* org, int c1, int c2) {
     isOneCentroid = true;
   } else if((0.5 * maxDist) > (avgDistCal1 + sdSum1) && (0.5 * maxDist) > (avgDistCal2 + sdSum2)){
     //introduce two new centroids
-    newScale1 = (avgDistCal1 + 0.5*sdSum1);
-    newScale2 = (avgDistCal2 + 0.5*sdSum2);
+    newScale1 = (avgDistCal1 + 0.5*sdSum1)/maxDist;
+    newScale2 = (avgDistCal2 + 0.5*sdSum2)/maxDist;
     for (int f = 0; f < numFeatures; f++) {
-      newScale1 += (uniformInRange(0.0, 0.1) - 0.05);
-      newScale2 += (uniformInRange(0.0, 0.1) - 0.05);
+      newScale1 *= 1+(uniformInRange(0.0, 0.1) - 0.05);
+      newScale2 *= 1+(uniformInRange(0.0, 0.1) - 0.05);
       newCentroid1[f] = org->clusCenter[c1][f] + newScale1*(org->clusCenter[c2][f]- org->clusCenter[c1][f]);
       newCentroid2[f] = org->clusCenter[c2][f] + newScale2*(org->clusCenter[c1][f]- org->clusCenter[c2][f]);
     }   
     isOneCentroid = false;
   }
   else if((0.5 * maxDist) > (avgDistCal1 + sdSum1) && (0.5 * maxDist) < (avgDistCal2 + sdSum2)){
+    //inside c2 and outside c1
     //introduce two new centroids
-    newScale1 = (avgDistCal1 + 0.5*sdSum1);
-    newScale2 = ((avgDistCal2 + 0.5*sdSum2) > (0.5*maxDist)) ? (avgDistCal2 + 0.5*sdSum2): (0.5*maxDist);
+    newScale1 = (avgDistCal1 + 0.5*sdSum1)/maxDist;
+    newScale2 = ((avgDistCal2 + 0.5*sdSum2) > (0.5*maxDist)) ? (avgDistCal2 + 0.5*sdSum2)/maxDist: 0.5;
     for (int f = 0; f < numFeatures; f++) {
-      newScale1 += (uniformInRange(0.0, 0.1) - 0.05);
-      newScale2 += (uniformInRange(0.0, 0.1) - 0.05);
+      newScale1 *= 1+(uniformInRange(0.0, 0.1) - 0.05);
+      newScale2 *= 1+(uniformInRange(0.0, 0.1) - 0.05);
       newCentroid1[f] = org->clusCenter[c1][f] + newScale1*(org->clusCenter[c2][f]- org->clusCenter[c1][f]);
       newCentroid2[f] = org->clusCenter[c2][f] + newScale2*(org->clusCenter[c1][f]- org->clusCenter[c2][f]);
     }   
     isOneCentroid = false;
   }
   else if((0.5 * maxDist) < (avgDistCal1 + sdSum1) && (0.5 * maxDist) > (avgDistCal2 + sdSum2)){
+    //inside c1 and outside c2
     //introduce two new centroids
-    newScale2 = (avgDistCal2 + 0.5*sdSum2);
-    newScale1 = ((avgDistCal1 + 0.5*sdSum1) > (0.5*maxDist)) ? (avgDistCal1 + 0.5*sdSum1): (0.5*maxDist);
+    newScale2 = (avgDistCal2 + 0.5*sdSum2)/maxDist;
+    newScale1 = ((avgDistCal1 + 0.5*sdSum1) > (0.5*maxDist)) ? (avgDistCal1 + 0.5*sdSum1)/maxDist: (0.5);
     for (int f = 0; f < numFeatures; f++) {
-      newScale1 += (uniformInRange(0.0, 0.1) - 0.05);
-      newScale2 += (uniformInRange(0.0, 0.1) - 0.05);
+      newScale1 *= 1+(uniformInRange(0.0, 0.1) - 0.05);
+      newScale2 *= 1+(uniformInRange(0.0, 0.1) - 0.05);
       newCentroid1[f] = org->clusCenter[c1][f] + newScale1*(org->clusCenter[c2][f]- org->clusCenter[c1][f]);
       newCentroid2[f] = org->clusCenter[c2][f] + newScale2*(org->clusCenter[c1][f]- org->clusCenter[c2][f]);
     }
@@ -767,19 +769,22 @@ void DEMain::centroidInsertion(Individual* org, int c1, int c2) {
   double min = numeric_limits<double>::max();
   int minIndex = -1;
   if(isOneCentroid){
-    for (int c = 0; c < maxNumClusters; c++) {
-      if (org->active[c] == false) {
-	//find index of centroid that's closest to new centroid
-	double tempDist = dist(org->clusCenter[c], newCentroid);
-	if (tempDist < min) {
+    if(org->numActiveClusters != maxNumClusters){
+      for (int c = 0; c < maxNumClusters; c++) {
+	if (org->active[c] == false) {
+	  //find index of centroid that's closest to new centroid
+	  double tempDist = dist(org->clusCenter[c], newCentroid);
+	  if (tempDist < min) {
 	  min = tempDist;
 	  minIndex = c;
+	  }
 	}
-      }
-    }//end for
+      }//end for
     //replace centroid at minIndex with the new centroid. recompute clustering, clean up and calc. fitness
-    assert(minIndex != -1);
+      assert(minIndex != -1);
+    }
     org->active[minIndex] = true;
+    org->numActiveClusters++;
     org->activationThreshold[minIndex] = uniformInRange(activationThreshold, 1.0);
     for (int f = 0; f < numFeatures; f++) {
       org->clusCenter[minIndex][f] = newCentroid[f];
@@ -788,35 +793,45 @@ void DEMain::centroidInsertion(Individual* org, int c1, int c2) {
   else{
     //find min for both centroids
     int minIndex1 = -1, minIndex2 = -1;
-    min = numeric_limits<double>::max();
-    for (int c = 0; c < maxNumClusters; c++) {
-      if (org->active[c] == false) {
-	//find index of centroid that's closest to new centroid
-	double tempDist = dist(org->clusCenter[c], newCentroid1);
-	if (tempDist < min) {
-	  min = tempDist;
+    double min1 = numeric_limits<double>::max();
+    if(org->numActiveClusters != maxNumClusters) {
+      for (int c = 0; c < maxNumClusters; c++) {
+	if (org->active[c] == false) {
+	  //find index of centroid that's closest to new centroid
+	  double tempDist = dist(org->clusCenter[c], newCentroid1);
+	if (tempDist < min1) {
+	  min1 = tempDist;
 	  minIndex1 = c;
 	}
-      }
-    }//end for
-    //replace centroid at minIndex with the new centroid. recompute clustering, clean up and calc. fitness
-    assert(minIndex1 != -1);
-    org->active[minIndex1] = true;
-    org->activationThreshold[minIndex1] = uniformInRange(activationThreshold, 1.0);
-    min = numeric_limits<double>::max();
-    for (int c = 0; c < maxNumClusters; c++) {
-      if (org->active[c] == false) {
-	//find index of centroid that's closest to new centroid
-	double tempDist = dist(org->clusCenter[c], newCentroid2);
-	if (tempDist < min) {
-	  min = tempDist;
-	  minIndex2 = c;
 	}
-      }
-    }//end for
-    //replace centroid at minIndex with the new centroid. recompute clustering, clean up and calc. fitness
-    assert(minIndex2 != -1);
+      }//end for
+      //replace centroid at minIndex with the new centroid. recompute clustering, clean up and calc. fitness
+      assert(minIndex1 != -1);
+    }
+    org->active[minIndex1] = true;
+    org->numActiveClusters++;
+    org->activationThreshold[minIndex1] = uniformInRange(activationThreshold, 1.0);
+    double min2 = numeric_limits<double>::max();
+    if(org->numActiveClusters != maxNumClusters) {
+      //cout << "-------------" << endl;
+      for (int c = 0; c < maxNumClusters; c++) {
+	if (org->active[c] == false) {
+	  //find index of centroid that's closest to new centroid
+	  //cout << "size of c1 " << org->clusters[c1]->size() << " and size of c2 " << org->clusters[c2]->size() << endl; 
+	  double tempDist = dist(org->clusCenter[c], newCentroid2);
+	  //cout << "temp dist " << tempDist << "min " << min2 << endl;
+	  if (tempDist < min2) {
+	    min2 = tempDist;
+	    minIndex2 = c;
+	    //cout << minIndex2 << endl;
+	  }
+	}
+      }//end for
+      //replace centroid at minIndex with the new centroid. recompute clustering, clean up and calc. fitness
+      assert(minIndex2 != -1);
+    }
     org->active[minIndex2] = true;
+    org->numActiveClusters++;
     org->activationThreshold[minIndex2] = uniformInRange(activationThreshold, 1.0);
     assert(minIndex1 != minIndex2);
     for (int f = 0; f < numFeatures; f++) {
@@ -826,21 +841,26 @@ void DEMain::centroidInsertion(Individual* org, int c1, int c2) {
       org->clusCenter[minIndex2][f] = newCentroid2[f];
     }
   }
+  delete[] newCentroid;
+  delete[] newCentroid1;
+  delete[] newCentroid2;
 }
+
 
 void DEMain::centroidAddition(Individual* org, ClusterSort* objClus){
   bool* clusSubSet = new bool[maxNumClusters];
   int maxSize = objClus[0].size;
   clusSubSet[0] = true; 
-  for(int c = 1; c < maxNumClusters; c++){
-    if(objClus[c].size >= (0.5*maxSize) && uniform01() <= 0.5)
+  for(int c = 1; c <= maxNumClusters/5; c++){
+    //if(objClus[c].size >= (0.5*maxSize) && uniform01() <= 0.5)
+    if(uniform01() <= 0.5 && org->active[objClus[c].clusIndex] && org->clusters[objClus[c].clusIndex]->size() > minimumClusSize)
       clusSubSet[c] = true;
     else
       clusSubSet[c] = false;
   }
-  for(int c = 1; c < maxNumClusters; c++){
+  for(int c = 1; c <= maxNumClusters/5; c++){
     if(clusSubSet[c]){
-      centroidInsertion(org, 0, c);
+      centroidInsertion(org, objClus[0].clusIndex, objClus[c].clusIndex);
       //cout << "Inserted centroids" << endl;
     }
   }
@@ -1119,9 +1139,9 @@ void DEMain::run(double min[], double max[], string filename) {
 	  Individual *child, *offspring;
 	  child = crossover(p, g, min, max); //generate an offspring my performing DE crossover
 	  //cout << "crossover finished" << endl;
-	  if(p == popObject->bestOrgIndex) {
+	  if(p == 1) {
 	    trackFile << "-------------------------------------------------" << endl;
-	    trackFile << "For individual at index " << p << " at generation " << g << endl;
+	    trackFile << "For individual at index " << p << " at generation " << g << "and cycle " << cycle << endl;
 	    isBestInd = true;
 	  }
 	  else{isBestInd = false;}
@@ -1130,6 +1150,7 @@ void DEMain::run(double min[], double max[], string filename) {
 	  double avg;
 	  if (popObject->org[p]->rawFitness <= offspring->rawFitness) { //if offspring better than parent, replace the parent
 	    isReplaceOrg[p] = true;
+	    if(isBestInd) {trackFile << "Offspring added" << endl;}
 	    newpop->org[p] = offspring;
 	    avg = 100*(1/offspring->rawFitness);
 	    avgDB += avg;
@@ -1141,6 +1162,7 @@ void DEMain::run(double min[], double max[], string filename) {
 	    }	  
 	  } else { //otherwise delete the offspring
 	    isReplaceOrg[p] = false;
+	    if(isBestInd) {trackFile << "Offspring discarded" << endl;}
 	    delete offspring;
 	    newpop->org[p] = popObject->org[p];
 	    avg = 100*(1/popObject->org[p]->rawFitness);
