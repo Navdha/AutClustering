@@ -59,6 +59,7 @@ int lastUpdatedGen = 0;
 int minimumClusSize = 2;
 double origScale;
 bool isBestInd = false;
+int indCentAdded;
 
 // to compare two triples containing the item id, cluster id and distance between item and cluster
 int compare(const void *p1, const void *p2){
@@ -165,6 +166,23 @@ void DEMain:: permuteBaseArray(){
   }
 }
 
+//generating a permuted array for selection of items inside a cluster
+int* DEMain:: permuteItems(Individual* org, int index){
+  int rand, temp;
+  int sizeArr = org->clusters[index]->size();
+  int* arr = new int[sizeArr];
+  for (vector<int>::size_type i = 0; i != sizeArr; i++) {
+    arr[i] = org->clusters[index]->at(i);
+  }
+  for( int p = 0; p < sizeArr; p++){
+    rand = uniformInRange(0, (sizeArr - p -1));
+    temp = arr[p];
+    arr[p] = arr[p+rand];
+    arr[p+rand] = temp;
+  }
+  return arr;
+}
+
 /*
  * Input parameters: pointers to arrays that hold
  * cluster center and item features
@@ -187,6 +205,54 @@ double DEMain::dist(double* x, double* y) {
   return sqrt(Sum);
 }
 
+double DEMain::findDist(int a, int b){
+  double dist = 0.0;
+  if (b < a) {
+    dist = distItem[b][a - (b + 1)];
+  } else {
+    dist = distItem[a][b - (a + 1)];
+  }
+  return dist;
+}
+
+int DEMain::callBinarySearch(Individual* org, double d, int size, int index){
+  int start = 0;
+  int end = size -1;
+  //  cout << "disst " << d << endl;
+  while(start < end) {
+    int mid = (start + end)/2;
+    int a = org->clusters[index]->at(mid);
+    double distance = dist(org->clusCenter[index], itemsArray[a]->items); 
+    if(d < distance) 
+      end = mid - 1;
+    else if(d > distance) 
+      start = mid + 1;
+    else 
+      return mid;
+  }
+
+  if(start == end)  return end;
+  else return start;
+  // return -1;
+}
+
+int DEMain::callBinarySearch(DistItemCluster* obj, double dist, int size){
+  int start = 0;
+  int end = size -1;
+
+  while(start < end) {
+    int mid = (start + end)/2;
+
+    if(dist < obj[mid].distance) 
+      end = mid - 1;
+    else if(dist > obj[mid].distance) 
+      start = mid + 1;
+    else 
+      return mid;
+  }
+  return start;
+  //return -1;
+} 
 
 /*
  * This method calculates and stores the distance between all items
@@ -233,7 +299,7 @@ void DEMain::printClusters(Individual* org){
   int activeCount = 0;
   for (int c = 0; c < maxNumClusters; c++) {
     if (org->active[c]) {			//prints out the best output
-      trackFile << "Centroid at index " << c << " of size " << org->clusters[c]->size() << endl;
+      trackFile << "Centroid [" << c << "][" << org->clusters[c]->size() << "] \t";
       for(int f=0;f < numFeatures;f++){
 	trackFile << org->clusCenter[c][f] << " " ;
       }
@@ -243,20 +309,23 @@ void DEMain::printClusters(Individual* org){
 	int itemIndex = org->clusters[c]->at(i);
 	clusClass[itemsArray[itemIndex]->typeClass]++;
       }
-      trackFile << "Elements of cluster " << c << " :" << endl;
-      trackFile << "Total # of items in cluster " << org->clusters[c]->size() << endl;
+      trackFile << "Cluster[" << c << "] \t";
+      //trackFile << "Total # of items in cluster " << org->clusters[c]->size() << endl;
+      trackFile << "[" ;
       for(int cl = 0; cl < numClasses+1; cl++){
 	if(clusClass[cl] != 0){
-	  trackFile << "Class " << cl << " : " << clusClass[cl] << " number of items";
-	  trackFile << endl;
+	  trackFile <<  clusClass[cl] << ",";
 	}
+	else trackFile << "," ;
       }//end printing for
+      trackFile << "]" << endl;
     }//end if
     for(int cl = 0; cl < numClasses+1; cl++){
       clusClass[cl] = 0;
     }
   }
-  trackFile << "Total number of clusters obtained : " << activeCount << endl;
+  trackFile << "Total[" << activeCount << "]" << endl;
+  trackFile << "Fitness[" << org->rawFitness << "]" << endl;
 }
 
 /* This method takes an input two arrays min and max
@@ -638,7 +707,7 @@ void DEMain::computeClustering(Individual* org) {
 }
 
 /*
- * Input parameters : Pointer to parent and offspring, index of parent, generation number, min-max value for each feature
+ * Input parameters : Pointer to offspring, min-max value for each feature
  * This method determines whether a parent is to be replaced by an offspring or not
  */
 Individual* DEMain::replacement(Individual* org, double min[], double max[]) {
@@ -657,15 +726,41 @@ Individual* DEMain::replacement(Individual* org, double min[], double max[]) {
     }
     objClus[c].clusIndex = c;
   }
-  qsort(objClus, maxNumClusters, sizeof(ClusterSort), compareSize);
+  qsort(objClus, maxNumClusters, sizeof(ClusterSort), compareSize);//to get the largest cluster in the chromosome
   if (objClus[0].size > 0.4 * numItems) {
     //create copy of original individual
     Individual* orgDup = new Individual(*org);
-    centroidAddition(orgDup, objClus);
-    computeClustering(orgDup);
-    cleanIndividual(orgDup, min, max);
+    if(uniform01() > 0.5) {   //with a probability decide if in between centroid addition or inside cluster centroid addition
+      centroidAddition(orgDup, objClus);
+      computeClustering(orgDup);
+      cleanIndividual(orgDup, min, max);
+      //check if there still exists a huge cluster
+      int maxIndexDup = -1;
+      double maxSize = numeric_limits<double>::min();
+      for (int c = 0; c < maxNumClusters; c++) {
+	if (orgDup->active[c] && orgDup->clusters[c]->size() > 0.4*numItems) {
+	  if(maxSize < orgDup->clusters[c]->size()){
+	    maxSize = orgDup->clusters[c]->size();
+	    maxIndexDup = c;
+	  }
+	}
+      }
+      if(maxIndexDup != -1){ 
+	//add centroids inside the large cluster if a large cluster still exists
+	addOneCentroid(orgDup, maxIndexDup); 
+	computeClustering(orgDup);
+	cleanIndividual(orgDup, min, max);
+	//cout << "outside addCent" << endl;
+      }
+    }
+    else{
+      addOneCentroid(orgDup, objClus[0].clusIndex);
+      computeClustering(orgDup);
+      cleanIndividual(orgDup, min, max);
+      //cout << "only addcent " << endl;
+    }
     double newFitness = calcDBIndex(orgDup);
-    orgDup->rawFitness = newFitness;
+    orgDup->rawFitness = 100 *(1/newFitness);
     if(isBestInd){
       trackFile << "////////////////////////////////////////////////////" << endl;
       printClusters(orgDup);
@@ -685,14 +780,161 @@ Individual* DEMain::replacement(Individual* org, double min[], double max[]) {
 }
 
 /*
+ * This method takes in the offspring that has the large cluster we want to split and the index of the centroid corresponding to the largest cluster
+ * Output: offspring has upto 3 new centroids at the end
+ */
+void DEMain::addOneCentroid(Individual* org, int index){
+  int size = org->clusters[index]->size();
+  int itemIndex = org->clusters[index]->at(size - 1); //pick the farthest away element
+  double maxDist = dist(org->clusCenter[index], itemsArray[itemIndex]->items);
+  int startRange = callBinarySearch(org,0.7*maxDist, org->clusters[index]->size(), index);
+  int endRange = size - 1;
+  int newCent = -1;
+  DistItemCluster* obj2 = new DistItemCluster[org->clusters[index]->size()];
+  double calcDist;
+  //cout << startRange << " startRange" << endl;
+  if(startRange != endRange && startRange != 0) {
+    int c = uniformInRange(startRange, endRange);//find a random item in the 70-100% range
+    //cout << "random c" << c << endl;
+    itemIndex = org->clusters[index]->at(c);//new centroid
+    maxDist = numeric_limits<double>::min();
+    double distMax = numeric_limits<double>::min(); 
+    //cout << "c1 is " << itemIndex << endl;
+    for (vector<int>::size_type i = 0; i != org->clusters[index]->size(); i++) {//form array of distances from the new centroid
+      int a = org->clusters[index]->at(i);
+      if(itemIndex != a)
+	calcDist = findDist(itemIndex, a);
+      else calcDist = 0;//distance of item from itself is 0
+      //cout << "calcDist " << calcDist << endl;
+      obj2[i].distance = calcDist;
+      obj2[i].itemIndex = a;
+      if(maxDist < calcDist) maxDist = calcDist;
+    }
+    //cout << "maxDist from c1 " << maxDist << endl;
+    for(int i = startRange; i <= endRange; i++){
+      if(obj2[i].itemIndex == org->clusters[index]->at(i)){
+	if(obj2[i].distance >= 0.7*maxDist && obj2[i].distance <= maxDist){//check if there exists an item in the intersection
+	  if(distMax < obj2[i].distance){
+	    distMax = obj2[i].distance;
+	    newCent = obj2[i].itemIndex;
+	  }
+	}
+      } 
+    }//end for
+  }
+  else
+    itemIndex = org->clusters[index]->at(endRange);
+  //add this as centroid in the chromosome 
+  double min = numeric_limits<double>::max();
+  int minIndex = -1;
+  //cout << "Checkpoint" << endl;
+  if(org->numActiveClusters != maxNumClusters){
+    for (int c = 0; c < maxNumClusters; c++) {
+      if (org->active[c] == false) {
+	//find index of centroid that's closest to new centroid
+	double tempDist = dist(org->clusCenter[c], itemsArray[itemIndex]->items);
+	if (tempDist < min) {
+	  min = tempDist;
+	  minIndex = c;
+	}
+      }
+    }//end for
+    //replace centroid at minIndex with the new centroid. recompute clustering, clean up and calc. fitness
+    assert(minIndex != -1);
+  }
+  org->active[minIndex] = true;
+  org->numActiveClusters++;
+  org->activationThreshold[minIndex] = uniformInRange(activationThreshold, 1.0);
+  for (int f = 0; f < numFeatures; f++) {
+    org->clusCenter[minIndex][f] = itemsArray[itemIndex]->items[f];
+  }
+  //form arrays to pass to addTwoCentroid
+  //cout << "checkpoint" <<endl;
+  if(newCent != -1){
+    min = numeric_limits<double>::max();
+    minIndex = -1;
+    if(org->numActiveClusters != maxNumClusters){
+      for (int c = 0; c < maxNumClusters; c++) {
+	if (org->active[c] == false) {
+	  //find index of centroid that's closest to new centroid
+	  double tempDist = dist(org->clusCenter[c], itemsArray[newCent]->items);
+	  if (tempDist < min) {
+	    min = tempDist;
+	    minIndex = c;
+	  }
+	}
+      }//end for
+      //replace centroid at minIndex with the new centroid. recompute clustering, clean up and calc. fitness
+      assert(minIndex != -1);
+    }
+    org->active[minIndex] = true;
+    org->numActiveClusters++;
+    org->activationThreshold[minIndex] = uniformInRange(activationThreshold, 1.0);
+    for (int f = 0; f < numFeatures; f++) {
+      org->clusCenter[minIndex][f] = itemsArray[newCent]->items[f];
+    }
+    addThreeCentroid(org, itemIndex, newCent, index, obj2, maxDist);
+    //cout << " checkpoint after c3 " << endl;
+    }//end if newCent
+}
+
+/*
+ * Input : offspring, index of c1, index of c2, index of original centroid, sorted array of items distant from c1, maxDist of an item from c1
+ * Output : if a new centroid added, old centroid is replaced with the new one or old centroid stays as it is
+ */
+void DEMain::addThreeCentroid(Individual* org, int ind1, int ind2, int origInd, DistItemCluster* obj2, double maxDist){
+  qsort(obj2,org->clusters[origInd]->size(), sizeof(DistItemCluster), compare);
+  //select 70-100% 
+  int startRange = callBinarySearch(obj2,0.7*maxDist, org->clusters[origInd]->size());
+  int endRange =  org->clusters[origInd]->size()- 1;
+  double calcDist;
+  if(startRange != endRange && startRange != 0) {
+    DistItemCluster* obj3 = new DistItemCluster[org->clusters[origInd]->size()];
+    double maxDist1 = numeric_limits<double>::min();
+    for (vector<int>::size_type i = 0; i != org->clusters[origInd]->size(); i++) {
+      int a = org->clusters[origInd]->at(i);
+      if(ind2 != a)
+	calcDist = findDist(ind2, a);
+      else calcDist = 0.0;
+      obj3[i].distance = calcDist;
+      obj3[i].itemIndex = a;
+      if(maxDist1 < calcDist) maxDist1 = calcDist;
+    }
+    int newCent = -1;
+    double distMax = numeric_limits<double>::min();
+    for(int i = startRange; i <= endRange; i++){
+      if(obj3[i].itemIndex == obj2[i].itemIndex){
+	if(obj3[i].distance >= 0.7*maxDist1 && obj3[i].distance <= maxDist1){
+	  if(distMax < obj3[i].distance){
+	    distMax = obj3[i].distance;
+	    newCent = obj3[i].itemIndex;
+	  }
+	}
+    }
+    }//end for
+    //replace old centroid with third centroid
+    if(newCent != -1){
+      for (int f = 0; f < numFeatures; f++) {
+      org->clusCenter[origInd][f] = itemsArray[newCent]->items[f];
+      }
+    }
+    //delete [] obj3;
+  }
+
+  //  delete [] obj2;
+}
+
+/*
  * This method computes and adds centroid to the chromosome passed
  */
 void DEMain::centroidInsertion(Individual* org, int c1, int c2) {
   bool isOneCentroid = false;
+  int closerCentInd = 0; // index of the new centroid(closer to larger cluster) after it replaces the one its closest to in the actual chromosome
   double maxDist;
   double avgDistCal1 = 0, avgDistCal2 = 0;
   double sdSum1 = 0, sdSum2 = 0;
   maxDist = dist(org->clusCenter[c1], org->clusCenter[c2]);
+  //computing the average distance and s.d for the largest cluster center and the selected subset
   for (vector<int>::size_type j = 0; j != org->clusters[c1]->size(); j++) {
     int a = org->clusters[c1]->at(j); //find item index stored in clusters
     avgDistCal1 += dist(itemsArray[a]->items, org->clusCenter[c1]);
@@ -722,14 +964,14 @@ void DEMain::centroidInsertion(Individual* org, int c1, int c2) {
   double* newCentroid2 = new double[numFeatures];
   //need to check if the centroid is too close or far from the larger cluster
   if ((0.5 * maxDist) < (avgDistCal1 + sdSum1) && (0.5 * maxDist) < (avgDistCal2 + sdSum2)) {
-    //add one centroid with some jitter
+    //add one centroid with some jitter when both clusters are overlapping in between
     for (int f = 0; f < numFeatures; f++) {
       newScale = 0.5 + (uniformInRange(0.0, 0.1) - 0.05);
       newCentroid[f] = org->clusCenter[c1][f] + newScale*(org->clusCenter[c2][f]- org->clusCenter[c1][f]);
     }
     isOneCentroid = true;
   } else if((0.5 * maxDist) > (avgDistCal1 + sdSum1) && (0.5 * maxDist) > (avgDistCal2 + sdSum2)){
-    //introduce two new centroids
+    //introduce two new centroids if both clusters are very far away such that the introduced centroids are closer to periphery of the clusters
     newScale1 = (avgDistCal1 + 0.5*sdSum1)/maxDist;
     newScale2 = (avgDistCal2 + 0.5*sdSum2)/maxDist;
     for (int f = 0; f < numFeatures; f++) {
@@ -742,9 +984,10 @@ void DEMain::centroidInsertion(Individual* org, int c1, int c2) {
   }
   else if((0.5 * maxDist) > (avgDistCal1 + sdSum1) && (0.5 * maxDist) < (avgDistCal2 + sdSum2)){
     //inside c2 and outside c1
-    //introduce two new centroids
+    //introduce two new centroids;
     newScale1 = (avgDistCal1 + 0.5*sdSum1)/maxDist;
     newScale2 = ((avgDistCal2 + 0.5*sdSum2) > (0.5*maxDist)) ? (avgDistCal2 + 0.5*sdSum2)/maxDist: 0.5;
+    closerCentInd = 2;
     for (int f = 0; f < numFeatures; f++) {
       newScale1 *= 1+(uniformInRange(0.0, 0.1) - 0.05);
       newScale2 *= 1+(uniformInRange(0.0, 0.1) - 0.05);
@@ -758,6 +1001,7 @@ void DEMain::centroidInsertion(Individual* org, int c1, int c2) {
     //introduce two new centroids
     newScale2 = (avgDistCal2 + 0.5*sdSum2)/maxDist;
     newScale1 = ((avgDistCal1 + 0.5*sdSum1) > (0.5*maxDist)) ? (avgDistCal1 + 0.5*sdSum1)/maxDist: (0.5);
+    closerCentInd = 1;
     for (int f = 0; f < numFeatures; f++) {
       newScale1 *= 1+(uniformInRange(0.0, 0.1) - 0.05);
       newScale2 *= 1+(uniformInRange(0.0, 0.1) - 0.05);
@@ -841,12 +1085,17 @@ void DEMain::centroidInsertion(Individual* org, int c1, int c2) {
       org->clusCenter[minIndex2][f] = newCentroid2[f];
     }
   }
+  //if(closerCentInd == 1) indCentAdded = minIndex1;
+  //else if(closerCentInd == 2) indCentAdded = minIndex2;
   delete[] newCentroid;
   delete[] newCentroid1;
   delete[] newCentroid2;
 }
 
-
+/*
+ * Input : offspring and object containing clusters in sorted order
+ * This method finds the subset of other cluster centers that are large enough to be considered along with the largest cluster to add new centroids in between
+ */
 void DEMain::centroidAddition(Individual* org, ClusterSort* objClus){
   bool* clusSubSet = new bool[maxNumClusters];
   int maxSize = objClus[0].size;
@@ -1113,6 +1362,7 @@ void DEMain::run(double min[], double max[], string filename) {
   double g = 0;
   fill_n(isReplaceOrg, popSize, false);
   double fitness;
+  ofstream trackBest;
   try {
     ostringstream strs, nf;
     strs << numRepeat;
@@ -1120,7 +1370,9 @@ void DEMain::run(double min[], double max[], string filename) {
     string lr = strs.str();
     string fn = nf.str();
     trackFile.open("trackCentAddition_" + lr + "_" + fn + ".txt");
-    trackOff.open("record.txt");
+    trackOff.open("record_wine3.txt");
+    trackBest.open("BestChromosme_wine3.txt");
+    trackBest << "Gen 0 : Index : " << popObject->bestOrgIndex << " with fitness " << popObject->org[popObject->bestOrgIndex]->rawFitness << endl; 
     trackOff << setiosflags(ios::left);
     trackOff << setw(5) << "Gen" << setw(5) << "Avg DB" << "|" << setw(10) << "Max DB"  << "|" << setw(10) << "Min DB" << endl;
     for(int cycle = 0; cycle < numRepeat; cycle++){
@@ -1150,7 +1402,7 @@ void DEMain::run(double min[], double max[], string filename) {
 	  double avg;
 	  if (popObject->org[p]->rawFitness <= offspring->rawFitness) { //if offspring better than parent, replace the parent
 	    isReplaceOrg[p] = true;
-	    if(isBestInd) {trackFile << "Offspring added" << endl;}
+	    if(isBestInd) {trackFile << "Offspring added and parent's fitness " << popObject->org[p]->rawFitness << endl;}
 	    newpop->org[p] = offspring;
 	    avg = 100*(1/offspring->rawFitness);
 	    avgDB += avg;
@@ -1162,7 +1414,7 @@ void DEMain::run(double min[], double max[], string filename) {
 	    }	  
 	  } else { //otherwise delete the offspring
 	    isReplaceOrg[p] = false;
-	    if(isBestInd) {trackFile << "Offspring discarded" << endl;}
+	    if(isBestInd) {trackFile << "Offspring discarded and parent's fitness " << popObject->org[p]->rawFitness << endl;}
 	    delete offspring;
 	    newpop->org[p] = popObject->org[p];
 	    avg = 100*(1/popObject->org[p]->rawFitness);
@@ -1193,6 +1445,7 @@ void DEMain::run(double min[], double max[], string filename) {
 	  }
 	}
 	popObject->bestOrgIndex = bestInd;
+	trackBest << "Gen " << g+1 << " : Index : " << popObject->bestOrgIndex << " with fitness " << popObject->org[bestInd]->rawFitness << endl; 
 	g++; //increment generation number
       }//end while
       //cause perturbation in population
@@ -1214,6 +1467,7 @@ void DEMain::run(double min[], double max[], string filename) {
     }
     trackOff.close();
     trackFile.close();
+    trackBest.close();
     report(popObject->bestOrgIndex, worstInd, filename);
   } catch (exception& e) {
     cerr << e.what() << endl;
