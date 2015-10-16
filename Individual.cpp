@@ -8,6 +8,27 @@
 #include "Individual.h"
 #include <stdexcept>
 
+
+using namespace std;
+
+Clustering::Clustering(double dist, int item){
+  distance = dist;
+  itemIndex = item;
+}
+
+Clustering::Clustering(const Clustering& obj){
+  distance = obj.distance;
+  itemIndex = obj.itemIndex;
+}
+
+//bool Clustering::operator<(const Clustering& obj){
+  // return (distance < obj.distance) ? true: false;
+  //}
+
+bool Clustering::operator==(const Clustering& obj) {
+  return (itemIndex == obj.itemIndex) ? true : false;
+}
+
 Individual::Individual(int kmax, int dim) {
   // TODO Auto-generated constructor stub
   //	cout << "Individual class constructor called." << endl;
@@ -15,15 +36,31 @@ Individual::Individual(int kmax, int dim) {
   maxNumClusters = kmax;
   numFeatures = dim;
   clusCenter = new double* [maxNumClusters];
-  clusters = new vector<int>*[maxNumClusters];
+  clusters = new vector<Clustering>*[maxNumClusters];
   for (int count = 0; count < maxNumClusters; count++)
     {
       clusCenter[count] = new double[numFeatures];
-      clusters[count] = new vector<int>;
+      clusters[count] = new vector<Clustering>;
     }
   activationThreshold =  new double[maxNumClusters];
   active = new bool[maxNumClusters];
   numActiveClusters = 0;
+}
+
+bool Individual::operator==(const Individual& org){
+  if(numActiveClusters == org.numActiveClusters){
+    for(int count = 0; count < maxNumClusters; count++){
+      for(int i = 0; i < numFeatures; i++){
+	if(clusCenter[count][i] != org.clusCenter[count][i]) return false;
+      }
+    }
+    //    cout << "Inside compare" << endl;
+    return true; 
+  }
+  else{
+    //    cout << "Inside compare" << endl;
+    return false;
+  }
 }
 
 Individual::Individual(const Individual& org){
@@ -33,14 +70,14 @@ Individual::Individual(const Individual& org){
   numFeatures = org.numFeatures;
   clusCenter = new double*[maxNumClusters];
   activationThreshold = new double[maxNumClusters];
-  clusters = new vector<int>*[maxNumClusters];
+  clusters = new vector<Clustering>*[maxNumClusters];
   active = new bool[maxNumClusters];
   numActiveClusters = org.numActiveClusters;
   for(int count = 0; count < maxNumClusters; count++){
     clusCenter[count] = new double[numFeatures];
     activationThreshold[count] = org.activationThreshold[count];
     active[count] = org.active[count];
-    clusters[count] = new vector<int>;
+    clusters[count] = new vector<Clustering>;
     *(clusters[count]) = *(org.clusters[count]);
     for(int i = 0; i < numFeatures; i++){
       clusCenter[count][i] = org.clusCenter[count][i];
@@ -64,6 +101,7 @@ ostream& operator<<(ostream& o, const Individual& org)
   }//end for i
   return o;
 }//operator<<
+
 
 Individual::~Individual() {
   // TODO Auto-generated destructor stub

@@ -11,10 +11,22 @@
 #include <iostream>
 
 using namespace std;
+
+class Clustering {
+ public:
+  double distance;
+  int itemIndex;
+  Clustering(double dist, int item);
+  Clustering(const Clustering& obj);
+  //  bool operator<(const Clustering& obj);
+  bool operator==(const Clustering& obj);
+};
+
 class Individual {
  public:
   Individual(int kmax, int dim);
   Individual(const Individual& org);
+  bool operator==(const Individual& org);
   ~Individual();
 
   double rawFitness;
@@ -24,7 +36,7 @@ class Individual {
   int numActiveClusters; // number of active clusters
   int maxNumClusters;          // maximum number of clusters
   int numFeatures;  // number of features
-  vector<int>** clusters;
+  vector<Clustering>** clusters;
 
 
   friend ostream& operator<<(ostream& o, const Individual& org);
