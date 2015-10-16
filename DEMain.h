@@ -38,6 +38,7 @@ public:
   DEMain(int dim, Item** items, int itemSize, int validityIndex, Parameters param);
   ~DEMain();
   void permuteBaseArray();
+  int* permuteItems(Individual* org, int index);
   void setup(double min[],double max[]);
   void computeClustering(Individual* org);
   double calcFitness(Individual* org);
@@ -63,6 +64,14 @@ public:
   void printClusters(Individual* org);
   bool validityCheck(Individual* org);
   void centroidInsertion(Individual* org, int c1, int c2);
+  //void centroidInCluster(Individual* org, int c1, int minSubSize, int numSmallClus);
+  void addOneCentroid(Individual* org, int index);
+  // void addTwoCentroid(Individual* org, int ind1, int ind2);
+  // void addTwoCentroid(Individual* org, int ind1, int ind2, int size1, int size2, DistItemCluster* obj1, DistItemCluster* obj2);
+  void addThreeCentroid(Individual* org, int ind1, int ind2, int origInd, DistItemCluster* obj2, double maxDist);
+  int callBinarySearch(Individual* org, double dist, int size, int index);
+  int callBinarySearch(DistItemCluster* obj, double dist, int size);
+  double findDist(int a, int b);
 
   Population* popObject;
   int strategy;
